@@ -1,4 +1,4 @@
-package com.comapny.employee_onboarding_system;
+package com.company.employee_onboarding_system;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
