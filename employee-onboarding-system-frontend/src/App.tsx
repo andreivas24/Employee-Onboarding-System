@@ -7,13 +7,15 @@ import AdminPanel from './pages/AdminPanel';
 import type { AuthUser } from './types/auth';
 import './App.css';
 import NotificationsCenter from './components/NotificationsCenter';
+import ProfilePage from './pages/ProfilePage';
+import type { UserProfile } from './types/profile';
 
 function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [showRegister, setShowRegister] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isCreateFormVisible, setIsCreateFormVisible] = useState(false);
-  const [activePage, setActivePage] = useState<'dashboard' | 'admin'>('dashboard');
+  const [activePage, setActivePage] = useState<'dashboard' | 'admin' | 'profile'>('dashboard');
 
   useEffect(() => {
     const savedUser = localStorage.getItem('authUser');
@@ -31,6 +33,32 @@ function App() {
     localStorage.removeItem('authUser');
     setUser(null);
     setActivePage('dashboard');
+  };
+
+  const handleProfileUpdated = (profile: UserProfile) => {
+    if (!user) {
+      return;
+    }
+
+    const updatedUser = {
+      ...user,
+      fullName: profile.fullName,
+      role: profile.role,
+      profileImageUrl: profile.profileImageUrl,
+    };
+
+    localStorage.setItem('authUser', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
+  const getImageUrl = (url?: string | null) => {
+    if (!url) {
+      return '';
+    }
+
+    return url.startsWith('http')
+      ? url
+      : `http://localhost:8080${url}`;
   };
 
   const handleOpenCreateRequest = () => {
@@ -70,7 +98,15 @@ function App() {
       <header className="app-header">
         <div className="user-info">
           <div className="user-avatar">
-            {user.fullName.charAt(0).toUpperCase()}
+            {user.profileImageUrl ? (
+              <img
+                src={getImageUrl(user.profileImageUrl)}
+                alt={user.fullName}
+                className="navbar-avatar-image"
+              />
+            ) : (
+              user.fullName.charAt(0).toUpperCase()
+            )}
           </div>
 
           <div>
@@ -98,11 +134,22 @@ function App() {
 
           <NotificationsCenter role={user.role} />
 
+          <button
+            className="nav-button"
+            onClick={() => setActivePage('profile')}
+          >
+            Profile
+          </button>
+
           <button className="logout-button" onClick={handleLogout}>
             Logout
           </button>
         </div>
       </header>
+
+      {activePage === 'profile' && (
+        <ProfilePage user={user} onProfileUpdated={handleProfileUpdated} />
+      )}
 
       {activePage === 'dashboard' && (
         <>
