@@ -2,12 +2,12 @@ package com.company.employee_onboarding_system.service;
 
 import com.company.employee_onboarding_system.dto.*;
 import com.company.employee_onboarding_system.entity.OnboardingRequest;
-import com.company.employee_onboarding_system.enums.HardwareTier;
-import com.company.employee_onboarding_system.enums.OnboardingStatus;
+import com.company.employee_onboarding_system.enums.*;
 import com.company.employee_onboarding_system.repository.OnboardingRequestRepository;
 import com.company.employee_onboarding_system.exception.BadRequestException;
 import com.company.employee_onboarding_system.exception.ResourceNotFoundException;
-import com.company.employee_onboarding_system.enums.Role;
+import com.company.employee_onboarding_system.entity.OnboardingHistory;
+import com.company.employee_onboarding_system.repository.OnboardingHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +18,8 @@ import java.util.List;
 public class OnboardingService {
 
     private final OnboardingRequestRepository onboardingRequestRepository;
+    private final OnboardingHistoryRepository onboardingHistoryRepository;
+    private final NotificationService notificationService;
 
     public OnboardingRequest createRequest(Role role, CreateOnboardingRequestDto dto) {
         if (role != Role.HR) {
@@ -25,15 +27,34 @@ public class OnboardingService {
         }
 
         OnboardingRequest request = OnboardingRequest.builder()
-                .employeeName(dto.getEmployeeName())
-                .employeeRole(dto.getEmployeeRole())
-                .startDate(dto.getStartDate())
-                .hardwareTier(dto.getHardwareTier())
-                .jobDescription(dto.getJobDescription())
-                .status(OnboardingStatus.MANAGER_REVIEW)
-                .build();
+            .employeeName(dto.getEmployeeName())
+            .employeeRole(dto.getEmployeeRole())
+            .startDate(dto.getStartDate())
+            .hardwareTier(dto.getHardwareTier())
+            .jobDescription(dto.getJobDescription())
+            .status(OnboardingStatus.MANAGER_REVIEW)
+            .build();
 
-        return onboardingRequestRepository.save(request);
+        OnboardingRequest savedRequest = onboardingRequestRepository.save(request);
+
+        saveHistory(
+            savedRequest.getId(),
+            HistoryAction.CREATED,
+            role,
+            "Onboarding request created and sent to Manager Review."
+        );
+
+        notifyRole(
+            savedRequest.getId(),
+            Role.MANAGER,
+            NotificationType.REQUEST_CREATED,
+            "New onboarding request",
+            "HR created a new onboarding request for "
+                + savedRequest.getEmployeeName()
+                + ". It is waiting for Manager Review."
+        );
+
+        return savedRequest;
     }
 
     public List<OnboardingRequest> getAllRequests() {
@@ -44,7 +65,7 @@ public class OnboardingService {
         return onboardingRequestRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Onboarding request not found with id: " + id
+                            "Onboarding request not found with id: " + id
                         )
                 );
     }
@@ -66,7 +87,16 @@ public class OnboardingService {
         request.setHardwareTier(dto.getHardwareTier());
         request.setJobDescription(dto.getJobDescription());
 
-        return onboardingRequestRepository.save(request);
+        OnboardingRequest updatedRequest = onboardingRequestRepository.save(request);
+
+        saveHistory(
+            updatedRequest.getId(),
+            HistoryAction.UPDATED,
+            role,
+            "Request details updated by HR."
+        );
+
+        return updatedRequest;
     }
 
     public OnboardingRequest resubmitRequest(Role role, Long id) {
@@ -83,7 +113,26 @@ public class OnboardingService {
         request.setStatus(OnboardingStatus.MANAGER_REVIEW);
         request.setRejectionReason(null);
 
-        return onboardingRequestRepository.save(request);
+        OnboardingRequest resubmittedRequest = onboardingRequestRepository.save(request);
+
+        saveHistory(
+            resubmittedRequest.getId(),
+            HistoryAction.RESUBMITTED,
+            role,
+            "Request resubmitted and sent back to Manager Review."
+        );
+
+        notifyRole(
+            resubmittedRequest.getId(),
+            Role.MANAGER,
+            NotificationType.REQUEST_RESUBMITTED,
+            "Request resubmitted",
+            "HR resubmitted the onboarding request for "
+                + resubmittedRequest.getEmployeeName()
+                + ". It is waiting for Manager Review."
+        );
+
+        return resubmittedRequest;
     }
 
     public OnboardingRequest approveRequest(Role role, Long id, ITProvisioningDto itProvisioningDto) {
@@ -102,13 +151,9 @@ public class OnboardingService {
                 }
             }
 
-            case FINANCE_APPROVAL -> {
-                if (role != Role.FINANCE) {
-                    throw new BadRequestException("Only finance users can approve requests in FINANCE_APPROVAL status.");
-                }
-
-                request.setStatus(OnboardingStatus.IT_PROVISIONING);
-            }
+            case FINANCE_APPROVAL -> throw new BadRequestException(
+                "Finance approval requires budget details. Please use the finance approval endpoint."
+            );
 
             case IT_PROVISIONING -> {
                 if (role != Role.IT) {
@@ -125,11 +170,75 @@ public class OnboardingService {
             }
 
             default -> throw new BadRequestException(
-                    "Request cannot be approved from status: " + request.getStatus()
+                "Request cannot be approved from status: " + request.getStatus()
             );
         }
 
-        return onboardingRequestRepository.save(request);
+        OnboardingRequest approvedRequest = onboardingRequestRepository.save(request);
+
+        HistoryAction action;
+        String notes;
+
+        if (role == Role.MANAGER) {
+            action = HistoryAction.MANAGER_APPROVED;
+
+            notes = request.getHardwareTier() == HardwareTier.PREMIUM
+                ? "Manager approved request. Premium hardware requires Finance approval."
+                : "Manager approved request. Standard hardware sent directly to IT Provisioning.";
+        } else if (role == Role.IT) {
+            action = HistoryAction.IT_COMPLETED;
+            notes = "IT completed account setup and laptop provisioning.";
+        } else {
+            action = HistoryAction.MANAGER_APPROVED;
+            notes = "Request approved.";
+        }
+
+        saveHistory(
+            approvedRequest.getId(),
+            action,
+            role,
+            notes
+        );
+
+        if (role == Role.MANAGER) {
+            if (approvedRequest.getStatus() == OnboardingStatus.FINANCE_APPROVAL) {
+                notifyRole(
+                    approvedRequest.getId(),
+                    Role.FINANCE,
+                    NotificationType.REQUEST_APPROVED,
+                    "Finance approval required",
+                    "Manager approved the request for "
+                        + approvedRequest.getEmployeeName()
+                        + ". Premium hardware budget approval is required."
+                );
+            }
+
+            if (approvedRequest.getStatus() == OnboardingStatus.IT_PROVISIONING) {
+                notifyRole(
+                    approvedRequest.getId(),
+                    Role.IT,
+                    NotificationType.REQUEST_APPROVED,
+                    "IT provisioning required",
+                    "Manager approved the request for "
+                        + approvedRequest.getEmployeeName()
+                        + ". IT provisioning can now start."
+                );
+            }
+        }
+
+        if (role == Role.IT) {
+            notifyRole(
+                approvedRequest.getId(),
+                Role.HR,
+                NotificationType.IT_COMPLETED,
+                "Onboarding completed",
+                "IT completed provisioning for "
+                    + approvedRequest.getEmployeeName()
+                    + ". The onboarding request is now completed."
+            );
+        }
+
+        return approvedRequest;
     }
 
     public OnboardingRequest rejectRequest(Role role, Long id, RejectRequestDto dto) {
@@ -154,7 +263,27 @@ public class OnboardingService {
         request.setStatus(OnboardingStatus.NEEDS_REWORK);
         request.setRejectionReason(dto.getRejectionReason());
 
-        return onboardingRequestRepository.save(request);
+        OnboardingRequest rejectedRequest = onboardingRequestRepository.save(request);
+
+        saveHistory(
+            rejectedRequest.getId(),
+            HistoryAction.REJECTED,
+            role,
+            "Request rejected. Reason: " + dto.getRejectionReason()
+        );
+
+        notifyRole(
+            rejectedRequest.getId(),
+            Role.HR,
+            NotificationType.REQUEST_REJECTED,
+            "Request rejected",
+            "The onboarding request for "
+                + rejectedRequest.getEmployeeName()
+                + " was rejected. Reason: "
+                + dto.getRejectionReason()
+        );
+
+        return rejectedRequest;
     }
 
     public OnboardingRequest financeApproveRequest(
@@ -180,6 +309,77 @@ public class OnboardingService {
         request.setFinanceNotes(dto.getFinanceNotes());
         request.setStatus(OnboardingStatus.IT_PROVISIONING);
 
-        return onboardingRequestRepository.save(request);
+        OnboardingRequest approvedRequest = onboardingRequestRepository.save(request);
+
+        saveHistory(
+            approvedRequest.getId(),
+            HistoryAction.FINANCE_APPROVED,
+            role,
+            "Finance approved hardware budget: " + dto.getApprovedBudget()
+                + ". Notes: " + dto.getFinanceNotes()
+        );
+
+        notifyRole(
+            approvedRequest.getId(),
+            Role.IT,
+            NotificationType.FINANCE_APPROVED,
+            "IT provisioning required",
+            "Finance approved the hardware budget for "
+                + approvedRequest.getEmployeeName()
+                + ". IT provisioning can now start."
+        );
+
+        return approvedRequest;
+    }
+
+    public List<OnboardingHistory> getHistoryByRequestId(Long requestId) {
+        getRequestById(requestId);
+
+        return onboardingHistoryRepository.findByRequestIdOrderByCreatedAtDesc(requestId);
+    }
+
+    private void saveHistory(
+            Long requestId,
+            HistoryAction action,
+            Role role,
+            String notes
+    ) {
+        OnboardingHistory history = OnboardingHistory.builder()
+            .requestId(requestId)
+            .action(action)
+            .performedByRole(role)
+            .notes(notes)
+            .build();
+
+        onboardingHistoryRepository.save(history);
+    }
+
+    private void notifyRole(
+            Long requestId,
+            Role targetRole,
+            NotificationType type,
+            String title,
+            String message
+    ) {
+        notificationService.createNotification(
+            requestId,
+            targetRole,
+            type,
+            title,
+            message
+        );
+    }
+
+    public DashboardStatsDto getDashboardStats() {
+        return new DashboardStatsDto(
+            onboardingRequestRepository.count(),
+            onboardingRequestRepository.countByStatus(OnboardingStatus.MANAGER_REVIEW),
+            onboardingRequestRepository.countByStatus(OnboardingStatus.FINANCE_APPROVAL),
+            onboardingRequestRepository.countByStatus(OnboardingStatus.IT_PROVISIONING),
+            onboardingRequestRepository.countByStatus(OnboardingStatus.NEEDS_REWORK),
+            onboardingRequestRepository.countByStatus(OnboardingStatus.COMPLETED),
+            onboardingRequestRepository.countByHardwareTier(HardwareTier.STANDARD),
+            onboardingRequestRepository.countByHardwareTier(HardwareTier.PREMIUM)
+        );
     }
 }

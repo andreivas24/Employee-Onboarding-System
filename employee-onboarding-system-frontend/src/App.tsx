@@ -3,14 +3,17 @@ import Dashboard from './pages/Dashboard';
 import CreateRequest from './pages/CreateRequest';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import AdminPanel from './pages/AdminPanel';
 import type { AuthUser } from './types/auth';
 import './App.css';
+import NotificationsCenter from './components/NotificationsCenter';
 
 function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [showRegister, setShowRegister] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isCreateFormVisible, setIsCreateFormVisible] = useState(false);
+  const [activePage, setActivePage] = useState<'dashboard' | 'admin'>('dashboard');
 
   useEffect(() => {
     const savedUser = localStorage.getItem('authUser');
@@ -27,6 +30,7 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem('authUser');
     setUser(null);
+    setActivePage('dashboard');
   };
 
   const handleOpenCreateRequest = () => {
@@ -80,26 +84,49 @@ function App() {
           </div>
         </div>
 
-        <button className="logout-button" onClick={handleLogout}>
-          Logout
-        </button>
+        <div className="app-header-actions">
+          {user.role === 'ADMIN' && (
+            <button
+              className="nav-button"
+              onClick={() =>
+                setActivePage(activePage === 'dashboard' ? 'admin' : 'dashboard')
+              }
+            >
+              {activePage === 'dashboard' ? 'Admin Panel' : 'Dashboard'}
+            </button>
+          )}
+
+          <NotificationsCenter role={user.role} />
+
+          <button className="logout-button" onClick={handleLogout}>
+            Logout
+          </button>
+        </div>
       </header>
 
-      <Dashboard
-        key={refreshKey}
-        role={user.role}
-        onCreateRequest={
-          user.role === 'HR' ? handleOpenCreateRequest : undefined
-        }
-      />
+      {activePage === 'dashboard' && (
+        <>
+          <Dashboard
+            key={refreshKey}
+            role={user.role}
+            onCreateRequest={
+              user.role === 'HR' ? handleOpenCreateRequest : undefined
+            }
+          />
 
-      {user.role === 'HR' && (
-        <CreateRequest
-          role={user.role}
-          onCreated={refreshDashboard}
-          isFormVisible={isCreateFormVisible}
-          setIsFormVisible={setIsCreateFormVisible}
-        />
+          {user.role === 'HR' && (
+            <CreateRequest
+              role={user.role}
+              onCreated={refreshDashboard}
+              isFormVisible={isCreateFormVisible}
+              setIsFormVisible={setIsCreateFormVisible}
+            />
+          )}
+        </>
+      )}
+
+      {activePage === 'admin' && user.role === 'ADMIN' && (
+        <AdminPanel role={user.role} />
       )}
     </div>
   );

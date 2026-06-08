@@ -6,6 +6,8 @@ import type {
   RejectRequest,
   UpdateOnboardingRequest,
   FinanceApprovalRequest,
+  OnboardingHistory,
+  DashboardStats,
 } from '../types/onboarding';
 import type { UserRole } from '../types/auth';
 
@@ -19,91 +21,104 @@ const roleHeader = (role: UserRole) => ({
 });
 
 export const onboardingApi = {
-  getAll: async (): Promise<OnboardingRequest[]> => {
-    const response = await axios.get<OnboardingRequest[]>(API_URL);
-    return response.data;
-  },
-
-  getById: async (id: number): Promise<OnboardingRequest> => {
-    const response = await axios.get<OnboardingRequest>(`${API_URL}/${id}`);
-    return response.data;
-  },
-
-  create: async (
-    role: UserRole,
-    data: CreateOnboardingRequest
-  ): Promise<OnboardingRequest> => {
-    const response = await axios.post<OnboardingRequest>(
-      API_URL,
-      data,
-      roleHeader(role)
-    );
-    return response.data;
-  },
-
-  update: async (
-    role: UserRole,
-    id: number,
-    data: UpdateOnboardingRequest
-  ): Promise<OnboardingRequest> => {
-    const response = await axios.put<OnboardingRequest>(
-      `${API_URL}/${id}`,
-      data,
-      roleHeader(role)
-    );
-    return response.data;
-  },
-
-  approve: async (
-    role: UserRole,
-    id: number,
-    data?: ITProvisioningRequest
-    ): Promise<OnboardingRequest> => {
-    const response = await axios.post<OnboardingRequest>(
-        `${API_URL}/${id}/approve`,
-        data ?? {},
-        roleHeader(role)
-    );
-
-    return response.data;
+    getAll: async (): Promise<OnboardingRequest[]> => {
+        const response = await axios.get<OnboardingRequest[]>(API_URL);
+        return response.data;
     },
 
-  reject: async (
-    role: UserRole,
-    id: number,
-    data: RejectRequest
-  ): Promise<OnboardingRequest> => {
-    const response = await axios.post<OnboardingRequest>(
-      `${API_URL}/${id}/reject`,
-      data,
-      roleHeader(role)
-    );
-    return response.data;
-  },
+    getById: async (id: number): Promise<OnboardingRequest> => {
+        const response = await axios.get<OnboardingRequest>(`${API_URL}/${id}`);
+        return response.data;
+    },
 
-  resubmit: async (
-    role: UserRole,
-    id: number
-  ): Promise<OnboardingRequest> => {
-    const response = await axios.post<OnboardingRequest>(
-      `${API_URL}/${id}/resubmit`,
-      null,
-      roleHeader(role)
-    );
-    return response.data;
-  },
+    create: async (
+        role: UserRole,
+        data: CreateOnboardingRequest
+    ): Promise<OnboardingRequest> => {
+        const response = await axios.post<OnboardingRequest>(
+            API_URL,
+            data,
+            roleHeader(role)
+        )   ;
+        return response.data;
+    },
 
-  financeApprove: async (
-    role: UserRole,
-    id: number,
-    data: FinanceApprovalRequest
-  ): Promise<OnboardingRequest> => {
-    const response = await axios.post<OnboardingRequest>(
-        `${API_URL}/${id}/finance-approve`,
-        data,
-        roleHeader(role)
-    );
+    update: async (
+        role: UserRole,
+        id: number,
+        data: UpdateOnboardingRequest
+    ): Promise<OnboardingRequest> => {
+        const response = await axios.put<OnboardingRequest>(
+            `${API_URL}/${id}`,
+            data,
+            roleHeader(role)
+        );
+        return response.data;
+    },
 
-    return response.data;
-  },
+    approve: async (
+        role: UserRole,
+        id: number,
+        data?: ITProvisioningRequest
+        ): Promise<OnboardingRequest> => {
+        const response = await axios.post<OnboardingRequest>(
+            `${API_URL}/${id}/approve`,
+            data ?? {},
+            roleHeader(role)
+        );
+
+        return response.data;
+    },
+
+    reject: async (
+        role: UserRole,
+        id: number,
+        data: RejectRequest
+        ): Promise<OnboardingRequest> => {
+            const response = await axios.post<OnboardingRequest>(
+                `${API_URL}/${id}/reject`,
+                data,
+                roleHeader(role)
+            );
+        return response.data;
+    },
+
+    resubmit: async (
+        role: UserRole,
+        id: number
+        ): Promise<OnboardingRequest> => {
+        const response = await axios.post<OnboardingRequest>(
+            `${API_URL}/${id}/resubmit`,
+            null,
+            roleHeader(role)
+        );
+        return response.data;
+    },
+
+    financeApprove: async (
+        role: UserRole,
+        id: number,
+        data: FinanceApprovalRequest
+        ): Promise<OnboardingRequest> => {
+            const response = await axios.post<OnboardingRequest>(
+                `${API_URL}/${id}/finance-approve`,
+                data,
+                roleHeader(role)
+            );
+
+        return response.data;
+    },
+
+    getHistory: async (id: number): Promise<OnboardingHistory[]> => {
+        const response = await axios.get<OnboardingHistory[]>(
+            `${API_URL}/${id}/history`
+        );
+
+        return response.data;
+    },
+
+    getStats: async (): Promise<DashboardStats> => {
+        const response = await axios.get<DashboardStats>(`${API_URL}/stats`);
+        return response.data;
+    },
 };

@@ -95,3 +95,24 @@
 .logout-button:hover {
   background: #edf4ff;
 }
+
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-button {
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background: var(--card-white);
+  color: var(--primary-blue);
+  font-weight: 900;
+  padding: 10px 16px;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.nav-button:hover {
+  background: #edf4ff;
+}

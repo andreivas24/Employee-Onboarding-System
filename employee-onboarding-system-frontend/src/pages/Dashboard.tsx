@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState } from 'react';
 import { onboardingApi } from '../api/onboardingApi';
-import type { FinanceApprovalRequest, ITProvisioningRequest, OnboardingRequest, UpdateOnboardingRequest } from '../types/onboarding';
+import type { FinanceApprovalRequest, ITProvisioningRequest, OnboardingRequest, UpdateOnboardingRequest, OnboardingHistory, DashboardStats } from '../types/onboarding';
 import type { UserRole } from '../types/auth';
 import '../styles/Dashboard.css';
 
@@ -14,6 +14,8 @@ function Dashboard({ role, onCreateRequest }: Props) {
     const [requests, setRequests] = useState<OnboardingRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+
+    const [stats, setStats] = useState<DashboardStats | null>(null);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
@@ -30,6 +32,10 @@ function Dashboard({ role, onCreateRequest }: Props) {
         hardwareTier: 'STANDARD',
         jobDescription: '',
     });
+
+    const [selectedHistoryRequest, setSelectedHistoryRequest] = useState<OnboardingRequest | null>(null);
+    const [historyItems, setHistoryItems] = useState<OnboardingHistory[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
 
     const [selectedFinanceRequest, setSelectedFinanceRequest] = useState<OnboardingRequest | null>(null);
     const [financeForm, setFinanceForm] = useState<FinanceApprovalRequest>({
@@ -101,11 +107,36 @@ function Dashboard({ role, onCreateRequest }: Props) {
         setCurrentPage(1);
     };
 
+    const openHistoryModal = async (request: OnboardingRequest) => {
+        try {
+            setSelectedHistoryRequest(request);
+            setHistoryLoading(true);
+
+            const data = await onboardingApi.getHistory(request.id);
+            setHistoryItems(data);
+        } catch {
+            showNotification('error', 'Failed to load request history.');
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
+
+    const closeHistoryModal = () => {
+        setSelectedHistoryRequest(null);
+        setHistoryItems([]);
+    };
+
     const loadRequests = async () => {
         try {
             setLoading(true);
-            const data = await onboardingApi.getAll();
-            setRequests(data);
+
+            const [requestsData, statsData] = await Promise.all([
+                onboardingApi.getAll(),
+                onboardingApi.getStats(),
+            ]);
+
+            setRequests(requestsData);
+            setStats(statsData);
             setError('');
         } catch {
             setError('Failed to load onboarding requests.');
@@ -372,6 +403,40 @@ function Dashboard({ role, onCreateRequest }: Props) {
             )}
         </div>
 
+        {stats && (
+            <div className="stats-grid">
+                <div className="stat-card">
+                    <span>Total Requests</span>
+                    <strong>{stats.totalRequests}</strong>
+                </div>
+
+                <div className="stat-card">
+                    <span>Manager Review</span>
+                    <strong>{stats.managerReviewCount}</strong>
+                </div>
+
+                <div className="stat-card">
+                    <span>Finance Approval</span>
+                    <strong>{stats.financeApprovalCount}</strong>
+                </div>
+
+                <div className="stat-card">
+                    <span>IT Provisioning</span>
+                    <strong>{stats.itProvisioningCount}</strong>
+                </div>
+
+                <div className="stat-card">
+                    <span>Needs Rework</span>
+                    <strong>{stats.needsReworkCount}</strong>
+                </div>
+
+                <div className="stat-card">
+                    <span>Completed</span>
+                    <strong>{stats.completedCount}</strong>
+                </div>
+            </div>
+        )}
+
         <div className="dashboard-filters">
             <div className="filter-group">
                 <label>Search</label>
@@ -416,6 +481,7 @@ function Dashboard({ role, onCreateRequest }: Props) {
                 <th>Status</th>
                 <th>Job Description</th>
                 <th>Actions</th>
+                <th>History</th>
                 </tr>
             </thead>
 
@@ -510,10 +576,67 @@ function Dashboard({ role, onCreateRequest }: Props) {
                                 )}
                         </div>
                         </td>
+
+                        <td>
+                            <button
+                                className="history-button"
+                                onClick={() => openHistoryModal(request)}
+                            >
+                                View History
+                            </button>
+                        </td>
                     </tr>
                 ))}
             </tbody>
         </table>
+
+        {selectedHistoryRequest && (
+            <div className="modal-overlay">
+                <div className="modal-card history-modal-card">
+                <h2>Workflow History</h2>
+                <p>
+                    Audit trail for <strong>{selectedHistoryRequest.employeeName}</strong>
+                </p>
+
+                {historyLoading && <p className="dashboard-message">Loading history...</p>}
+
+                {!historyLoading && historyItems.length === 0 && (
+                    <p className="no-actions-label">No history available.</p>
+                )}
+
+                {!historyLoading && historyItems.length > 0 && (
+                    <div className="history-timeline">
+                    {historyItems.map((item) => (
+                        <div className="history-item" key={item.id}>
+                        <div className="history-dot" />
+
+                        <div className="history-content">
+                            <div className="history-header">
+                            <span className="history-action">{item.action}</span>
+                            <span className={`role-badge role-${item.performedByRole.toLowerCase()}`}>
+                                {item.performedByRole}
+                            </span>
+                            </div>
+
+                            <p className="history-notes">{item.notes}</p>
+
+                            <p className="history-date">
+                            {new Date(item.createdAt).toLocaleString()}
+                            </p>
+                        </div>
+                        </div>
+                    ))}
+                    </div>
+                )}
+
+                <div className="modal-actions">
+                    <button className="secondary-button" onClick={closeHistoryModal}>
+                    Close
+                    </button>
+                </div>
+                </div>
+            </div>
+        )}
 
         {filteredRequests.length > 0 && (
             <div className="pagination">

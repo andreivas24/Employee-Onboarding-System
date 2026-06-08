@@ -5,5 +5,6 @@ public enum Role {
     MANAGER,
     FINANCE,
     IT,
-    ADMIN
+    ADMIN,
+    VIEWER
 }

@@ -51,3 +51,32 @@ export interface FinanceApprovalRequest {
   approvedBudget: number;
   financeNotes: string;
 }
+
+export type HistoryAction =
+  | 'CREATED'
+  | 'MANAGER_APPROVED'
+  | 'FINANCE_APPROVED'
+  | 'IT_COMPLETED'
+  | 'REJECTED'
+  | 'UPDATED'
+  | 'RESUBMITTED';
+
+export interface OnboardingHistory {
+  id: number;
+  requestId: number;
+  action: HistoryAction;
+  performedByRole: string;
+  notes: string;
+  createdAt: string;
+}
+
+export interface DashboardStats {
+  totalRequests: number;
+  managerReviewCount: number;
+  financeApprovalCount: number;
+  itProvisioningCount: number;
+  needsReworkCount: number;
+  completedCount: number;
+  standardHardwareCount: number;
+  premiumHardwareCount: number;
+}

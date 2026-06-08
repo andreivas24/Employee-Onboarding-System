@@ -1,0 +1,126 @@
+.notifications-wrapper {
+  position: relative;
+}
+
+.notifications-button {
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background: var(--card-white);
+  color: var(--primary-blue);
+  font-weight: 900;
+  padding: 10px 16px;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.notifications-badge {
+  margin-left: 8px;
+  background: var(--error-text);
+  color: white;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+.notifications-panel {
+  position: absolute;
+  top: 52px;
+  right: 0;
+  width: 420px;
+  max-height: 520px;
+  overflow-y: auto;
+  background: var(--card-white);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.16);
+  z-index: 1500;
+  padding: 18px;
+}
+
+.notifications-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.notifications-header h3 {
+  margin: 0;
+  color: var(--dark-navy);
+}
+
+.notifications-header button,
+.notification-item button {
+  border: none;
+  background: #edf4ff;
+  color: var(--primary-blue);
+  font-weight: 800;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.notifications-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.notification-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.notification-unread {
+  background: #f0f7ff;
+}
+
+.notification-read {
+  background: #ffffff;
+  opacity: 0.75;
+}
+
+.notification-item h4 {
+  margin: 0 0 6px;
+  color: var(--dark-navy);
+}
+
+.notification-item p {
+  margin: 0 0 8px;
+  color: var(--text-dark);
+  font-size: 14px;
+}
+
+.notification-item span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.notifications-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.close-notifications-button {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 10px;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 22px;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-notifications-button:hover {
+  background: #fecaca;
+}

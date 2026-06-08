@@ -18,7 +18,4 @@ public class RegisterRequestDto {
 
     @NotBlank
     private String password;
-
-    @NotNull
-    private Role role;
 }

@@ -1,0 +1,94 @@
+.admin-panel-container {
+  max-width: 1280px;
+  margin: 36px auto 70px;
+  padding: 0 24px;
+}
+
+.admin-panel-header {
+  margin-bottom: 24px;
+}
+
+.admin-panel-header h2 {
+  margin: 0 0 8px;
+  color: var(--dark-navy);
+  font-size: 36px;
+  font-weight: 900;
+}
+
+.admin-panel-header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+.admin-message {
+  max-width: 640px;
+  margin: 0 0 18px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+.admin-message-success {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.admin-message-error {
+  background: #fee2e2;
+  color: var(--error-text);
+}
+
+.admin-table-wrapper {
+  background: var(--card-white);
+  border: 1px solid var(--border-light);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 16px 35px rgba(15, 23, 42, 0.08);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th {
+  background: #eef4ff;
+  color: var(--dark-navy);
+  font-weight: 900;
+  text-align: left;
+  padding: 16px;
+}
+
+.admin-table td {
+  padding: 16px;
+  border-top: 1px solid var(--border-light);
+  color: var(--text-dark);
+}
+
+.admin-table select {
+  width: 180px;
+  height: 42px;
+  border: 1px solid #d6dce8;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: white;
+  color: var(--text-dark);
+  font-weight: 700;
+}
+
+.admin-update-button {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  background: linear-gradient(90deg, var(--primary-blue), var(--primary-purple));
+  color: white;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-empty {
+  padding: 20px;
+  color: var(--text-muted);
+  font-style: italic;
+}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { authApi } from '../api/authApi';
-import type { AuthUser, UserRole } from '../types/auth';
+import type { AuthUser } from '../types/auth';
 import '../styles/Login.css';
 
 type Props = {
@@ -12,7 +12,6 @@ function Register({ onRegister, onGoToLogin }: Props) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('HR');
   const [error, setError] = useState('');
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -23,7 +22,6 @@ function Register({ onRegister, onGoToLogin }: Props) {
         fullName,
         email,
         password,
-        role,
       });
 
       localStorage.setItem('authUser', JSON.stringify(user));
@@ -64,18 +62,6 @@ function Register({ onRegister, onGoToLogin }: Props) {
             onChange={(event) => setPassword(event.target.value)}
             required
           />
-
-          <label>Role</label>
-          <select
-            value={role}
-            onChange={(event) => setRole(event.target.value as UserRole)}
-          >
-            <option value="HR">HR</option>
-            <option value="MANAGER">Manager</option>
-            <option value="FINANCE">Finance</option>
-            <option value="IT">IT</option>
-            <option value="ADMIN">Admin</option>
-          </select>
 
           <button type="submit">Register</button>
         </form>

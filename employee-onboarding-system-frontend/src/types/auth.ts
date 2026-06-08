@@ -1,4 +1,4 @@
-export type UserRole = 'HR' | 'MANAGER' | 'FINANCE' | 'IT' | 'ADMIN';
+export type UserRole = 'HR' | 'MANAGER' | 'FINANCE' | 'IT' | 'ADMIN' | 'VIEWER';
 
 export interface AuthUser {
   id: number;
@@ -16,5 +16,4 @@ export interface RegisterRequest {
   fullName: string;
   email: string;
   password: string;
-  role: UserRole;
 }
