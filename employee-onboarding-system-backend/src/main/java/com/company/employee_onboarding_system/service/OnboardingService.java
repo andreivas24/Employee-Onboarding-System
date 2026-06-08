@@ -1,15 +1,13 @@
 package com.company.employee_onboarding_system.service;
 
-import com.company.employee_onboarding_system.dto.CreateOnboardingRequestDto;
-import com.company.employee_onboarding_system.dto.ITProvisioningDto;
-import com.company.employee_onboarding_system.dto.RejectRequestDto;
-import com.company.employee_onboarding_system.dto.UpdateOnboardingRequestDto;
+import com.company.employee_onboarding_system.dto.*;
 import com.company.employee_onboarding_system.entity.OnboardingRequest;
 import com.company.employee_onboarding_system.enums.HardwareTier;
 import com.company.employee_onboarding_system.enums.OnboardingStatus;
 import com.company.employee_onboarding_system.repository.OnboardingRequestRepository;
 import com.company.employee_onboarding_system.exception.BadRequestException;
 import com.company.employee_onboarding_system.exception.ResourceNotFoundException;
+import com.company.employee_onboarding_system.enums.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +19,11 @@ public class OnboardingService {
 
     private final OnboardingRequestRepository onboardingRequestRepository;
 
-    public OnboardingRequest createRequest(CreateOnboardingRequestDto dto) {
+    public OnboardingRequest createRequest(Role role, CreateOnboardingRequestDto dto) {
+        if (role != Role.HR) {
+            throw new BadRequestException("Only HR can create onboarding requests.");
+        }
+
         OnboardingRequest request = OnboardingRequest.builder()
                 .employeeName(dto.getEmployeeName())
                 .employeeRole(dto.getEmployeeRole())
@@ -47,7 +49,11 @@ public class OnboardingService {
                 );
     }
 
-    public OnboardingRequest updateRequest(Long id, UpdateOnboardingRequestDto dto) {
+    public OnboardingRequest updateRequest(Role role, Long id, UpdateOnboardingRequestDto dto) {
+        if (role != Role.HR) {
+            throw new BadRequestException("Only HR can update onboarding requests.");
+        }
+
         OnboardingRequest request = getRequestById(id);
 
         if (request.getStatus() != OnboardingStatus.NEEDS_REWORK) {
@@ -63,7 +69,11 @@ public class OnboardingService {
         return onboardingRequestRepository.save(request);
     }
 
-    public OnboardingRequest resubmitRequest(Long id) {
+    public OnboardingRequest resubmitRequest(Role role, Long id) {
+        if (role != Role.HR) {
+            throw new BadRequestException("Only HR can resubmit onboarding requests.");
+        }
+
         OnboardingRequest request = getRequestById(id);
 
         if (request.getStatus() != OnboardingStatus.NEEDS_REWORK) {
@@ -76,12 +86,15 @@ public class OnboardingService {
         return onboardingRequestRepository.save(request);
     }
 
-    public OnboardingRequest approveRequest(Long id, ITProvisioningDto itProvisioningDto) {
+    public OnboardingRequest approveRequest(Role role, Long id, ITProvisioningDto itProvisioningDto) {
         OnboardingRequest request = getRequestById(id);
 
         switch (request.getStatus()) {
-
             case MANAGER_REVIEW -> {
+                if (role != Role.MANAGER) {
+                    throw new BadRequestException("Only managers can approve requests in MANAGER_REVIEW status.");
+                }
+
                 if (request.getHardwareTier() == HardwareTier.PREMIUM) {
                     request.setStatus(OnboardingStatus.FINANCE_APPROVAL);
                 } else {
@@ -89,9 +102,19 @@ public class OnboardingService {
                 }
             }
 
-            case FINANCE_APPROVAL -> request.setStatus(OnboardingStatus.IT_PROVISIONING);
+            case FINANCE_APPROVAL -> {
+                if (role != Role.FINANCE) {
+                    throw new BadRequestException("Only finance users can approve requests in FINANCE_APPROVAL status.");
+                }
+
+                request.setStatus(OnboardingStatus.IT_PROVISIONING);
+            }
 
             case IT_PROVISIONING -> {
+                if (role != Role.IT) {
+                    throw new BadRequestException("Only IT users can complete IT provisioning.");
+                }
+
                 if (itProvisioningDto == null) {
                     throw new BadRequestException("IT provisioning details are required.");
                 }
@@ -109,15 +132,53 @@ public class OnboardingService {
         return onboardingRequestRepository.save(request);
     }
 
-    public OnboardingRequest rejectRequest(Long id, RejectRequestDto dto) {
+    public OnboardingRequest rejectRequest(Role role, Long id, RejectRequestDto dto) {
         OnboardingRequest request = getRequestById(id);
 
         if (request.getStatus() == OnboardingStatus.COMPLETED) {
             throw new BadRequestException("Completed requests cannot be rejected.");
         }
 
+        if (request.getStatus() == OnboardingStatus.MANAGER_REVIEW && role != Role.MANAGER) {
+            throw new BadRequestException("Only managers can reject requests in MANAGER_REVIEW status.");
+        }
+
+        if (request.getStatus() == OnboardingStatus.FINANCE_APPROVAL && role != Role.FINANCE) {
+            throw new BadRequestException("Only finance users can reject requests in FINANCE_APPROVAL status.");
+        }
+
+        if (request.getStatus() == OnboardingStatus.IT_PROVISIONING && role != Role.IT) {
+            throw new BadRequestException("Only IT users can reject requests in IT_PROVISIONING status.");
+        }
+
         request.setStatus(OnboardingStatus.NEEDS_REWORK);
         request.setRejectionReason(dto.getRejectionReason());
+
+        return onboardingRequestRepository.save(request);
+    }
+
+    public OnboardingRequest financeApproveRequest(
+            Role role,
+            Long id,
+            FinanceApprovalDto dto
+    ) {
+        if (role != Role.FINANCE) {
+            throw new BadRequestException("Only finance users can approve hardware budget.");
+        }
+
+        OnboardingRequest request = getRequestById(id);
+
+        if (request.getStatus() != OnboardingStatus.FINANCE_APPROVAL) {
+            throw new BadRequestException("Only requests with FINANCE_APPROVAL status can be approved by Finance.");
+        }
+
+        if (request.getHardwareTier() != HardwareTier.PREMIUM) {
+            throw new BadRequestException("Finance approval is required only for PREMIUM hardware requests.");
+        }
+
+        request.setApprovedBudget(dto.getApprovedBudget());
+        request.setFinanceNotes(dto.getFinanceNotes());
+        request.setStatus(OnboardingStatus.IT_PROVISIONING);
 
         return onboardingRequestRepository.save(request);
     }

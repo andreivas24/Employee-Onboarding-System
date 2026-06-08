@@ -1,11 +1,9 @@
 package com.company.employee_onboarding_system.controller;
 
-import com.company.employee_onboarding_system.dto.CreateOnboardingRequestDto;
-import com.company.employee_onboarding_system.dto.ITProvisioningDto;
-import com.company.employee_onboarding_system.dto.RejectRequestDto;
-import com.company.employee_onboarding_system.dto.UpdateOnboardingRequestDto;
+import com.company.employee_onboarding_system.dto.*;
 import com.company.employee_onboarding_system.entity.OnboardingRequest;
 import com.company.employee_onboarding_system.service.OnboardingService;
+import com.company.employee_onboarding_system.enums.Role;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -21,8 +19,11 @@ public class OnboardingController {
     private final OnboardingService onboardingService;
 
     @PostMapping
-    public OnboardingRequest createRequest(@Valid @RequestBody CreateOnboardingRequestDto dto) {
-        return onboardingService.createRequest(dto);
+    public OnboardingRequest createRequest(
+            @RequestHeader("X-User-Role") Role role,
+            @Valid @RequestBody CreateOnboardingRequestDto dto
+    ) {
+        return onboardingService.createRequest(role, dto);
     }
 
     @GetMapping
@@ -37,30 +38,45 @@ public class OnboardingController {
 
     @PutMapping("/{id}")
     public OnboardingRequest updateRequest(
+            @RequestHeader("X-User-Role") Role role,
             @PathVariable Long id,
             @Valid @RequestBody UpdateOnboardingRequestDto dto
     ) {
-        return onboardingService.updateRequest(id, dto);
+        return onboardingService.updateRequest(role, id, dto);
     }
 
     @PostMapping("/{id}/resubmit")
-    public OnboardingRequest resubmitRequest(@PathVariable Long id) {
-        return onboardingService.resubmitRequest(id);
+    public OnboardingRequest resubmitRequest(
+            @RequestHeader("X-User-Role") Role role,
+            @PathVariable Long id
+    ) {
+        return onboardingService.resubmitRequest(role, id);
     }
 
     @PostMapping("/{id}/approve")
     public OnboardingRequest approveRequest(
+            @RequestHeader("X-User-Role") Role role,
             @PathVariable Long id,
             @RequestBody(required = false) ITProvisioningDto itProvisioningDto
     ) {
-        return onboardingService.approveRequest(id, itProvisioningDto);
+        return onboardingService.approveRequest(role, id, itProvisioningDto);
     }
 
     @PostMapping("/{id}/reject")
     public OnboardingRequest rejectRequest(
+            @RequestHeader("X-User-Role") Role role,
             @PathVariable Long id,
             @Valid @RequestBody RejectRequestDto dto
     ) {
-        return onboardingService.rejectRequest(id, dto);
+        return onboardingService.rejectRequest(role, id, dto);
+    }
+
+    @PostMapping("/{id}/finance-approve")
+    public OnboardingRequest financeApproveRequest(
+            @RequestHeader("X-User-Role") Role role,
+            @PathVariable Long id,
+            @Valid @RequestBody FinanceApprovalDto dto
+    ) {
+        return onboardingService.financeApproveRequest(role, id, dto);
     }
 }

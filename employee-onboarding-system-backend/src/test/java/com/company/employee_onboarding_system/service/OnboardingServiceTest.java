@@ -7,6 +7,7 @@ import com.company.employee_onboarding_system.dto.UpdateOnboardingRequestDto;
 import com.company.employee_onboarding_system.entity.OnboardingRequest;
 import com.company.employee_onboarding_system.enums.HardwareTier;
 import com.company.employee_onboarding_system.enums.OnboardingStatus;
+import com.company.employee_onboarding_system.enums.Role;
 import com.company.employee_onboarding_system.exception.BadRequestException;
 import com.company.employee_onboarding_system.exception.ResourceNotFoundException;
 import com.company.employee_onboarding_system.repository.OnboardingRequestRepository;
@@ -43,7 +44,7 @@ class OnboardingServiceTest {
         when(onboardingRequestRepository.save(any(OnboardingRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        OnboardingRequest result = onboardingService.createRequest(dto);
+        OnboardingRequest result = onboardingService.createRequest(Role.HR, dto);
 
         assertEquals("Ion Popescu", result.getEmployeeName());
         assertEquals("Java Developer", result.getEmployeeRole());
@@ -91,7 +92,7 @@ class OnboardingServiceTest {
         when(onboardingRequestRepository.save(any(OnboardingRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        OnboardingRequest result = onboardingService.approveRequest(1L, null);
+        OnboardingRequest result = onboardingService.approveRequest(Role.MANAGER,1L, null);
 
         assertEquals(OnboardingStatus.IT_PROVISIONING, result.getStatus());
     }
@@ -108,7 +109,7 @@ class OnboardingServiceTest {
         when(onboardingRequestRepository.save(any(OnboardingRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        OnboardingRequest result = onboardingService.approveRequest(2L, null);
+        OnboardingRequest result = onboardingService.approveRequest(Role.MANAGER,2L, null);
 
         assertEquals(OnboardingStatus.FINANCE_APPROVAL, result.getStatus());
     }
@@ -125,7 +126,7 @@ class OnboardingServiceTest {
         when(onboardingRequestRepository.save(any(OnboardingRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        OnboardingRequest result = onboardingService.approveRequest(2L, null);
+        OnboardingRequest result = onboardingService.approveRequest(Role.FINANCE,2L, null);
 
         assertEquals(OnboardingStatus.IT_PROVISIONING, result.getStatus());
     }
@@ -146,7 +147,7 @@ class OnboardingServiceTest {
         when(onboardingRequestRepository.save(any(OnboardingRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        OnboardingRequest result = onboardingService.approveRequest(3L, dto);
+        OnboardingRequest result = onboardingService.approveRequest(Role.IT,3L, dto);
 
         assertEquals(OnboardingStatus.COMPLETED, result.getStatus());
         assertEquals("ion.popescu@company.com", result.getCompanyEmail());
@@ -165,7 +166,7 @@ class OnboardingServiceTest {
 
         assertThrows(
                 BadRequestException.class,
-                () -> onboardingService.approveRequest(3L, null)
+                () -> onboardingService.approveRequest(Role.IT,3L, null)
         );
     }
 
@@ -184,7 +185,7 @@ class OnboardingServiceTest {
         when(onboardingRequestRepository.save(any(OnboardingRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        OnboardingRequest result = onboardingService.rejectRequest(4L, dto);
+        OnboardingRequest result = onboardingService.rejectRequest(Role.MANAGER, 4L, dto);
 
         assertEquals(OnboardingStatus.NEEDS_REWORK, result.getStatus());
         assertEquals("Job title is not specific enough.", result.getRejectionReason());
@@ -205,7 +206,7 @@ class OnboardingServiceTest {
 
         assertThrows(
                 BadRequestException.class,
-                () -> onboardingService.rejectRequest(5L, dto)
+                () -> onboardingService.rejectRequest(Role.MANAGER,5L, dto)
         );
     }
 
@@ -228,7 +229,7 @@ class OnboardingServiceTest {
         when(onboardingRequestRepository.save(any(OnboardingRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        OnboardingRequest result = onboardingService.updateRequest(6L, dto);
+        OnboardingRequest result = onboardingService.updateRequest(Role.HR,6L, dto);
 
         assertEquals("Alex Dumitru", result.getEmployeeName());
         assertEquals("Automation QA Engineer", result.getEmployeeRole());
@@ -250,7 +251,7 @@ class OnboardingServiceTest {
 
         assertThrows(
                 BadRequestException.class,
-                () -> onboardingService.updateRequest(7L, dto)
+                () -> onboardingService.updateRequest(Role.HR,7L, dto)
         );
     }
 
@@ -267,7 +268,7 @@ class OnboardingServiceTest {
         when(onboardingRequestRepository.save(any(OnboardingRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        OnboardingRequest result = onboardingService.resubmitRequest(8L);
+        OnboardingRequest result = onboardingService.resubmitRequest(Role.HR,8L);
 
         assertEquals(OnboardingStatus.MANAGER_REVIEW, result.getStatus());
         assertNull(result.getRejectionReason());

@@ -8,10 +8,32 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Map<String, String> FIELD_LABELS = Map.ofEntries(
+            Map.entry("employeeName", "Employee Name"),
+            Map.entry("employeeRole", "Employee Role"),
+            Map.entry("startDate", "Start Date"),
+            Map.entry("hardwareTier", "Hardware Tier"),
+            Map.entry("jobDescription", "Job Description"),
+
+            Map.entry("rejectionReason", "Rejection Reason"),
+
+            Map.entry("companyEmail", "Company Email"),
+            Map.entry("laptopConfiguration", "Laptop Configuration"),
+
+            Map.entry("approvedBudget", "Approved Budget"),
+            Map.entry("financeNotes", "Finance Notes"),
+
+            Map.entry("fullName", "Full Name"),
+            Map.entry("email", "Email"),
+            Map.entry("password", "Password"),
+            Map.entry("role", "Role")
+    );
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(
@@ -53,7 +75,7 @@ public class GlobalExceptionHandler {
         String message = exception.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .map(error -> getFieldLabel(error.getField()) + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining(", "));
 
         ErrorResponse errorResponse = new ErrorResponse(
@@ -76,10 +98,14 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Internal Server Error",
-                exception.getMessage(),
+                "An unexpected error occurred. Please try again later.",
                 request.getRequestURI()
         );
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    private String getFieldLabel(String fieldName) {
+        return FIELD_LABELS.getOrDefault(fieldName, "Field");
     }
 }

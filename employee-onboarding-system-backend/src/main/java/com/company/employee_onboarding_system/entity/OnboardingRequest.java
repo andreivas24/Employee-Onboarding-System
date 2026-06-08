@@ -52,6 +52,11 @@ public class OnboardingRequest {
 
     private LocalDateTime updatedAt;
 
+    private Double approvedBudget;
+
+    @Column(columnDefinition = "TEXT")
+    private String financeNotes;
+
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
