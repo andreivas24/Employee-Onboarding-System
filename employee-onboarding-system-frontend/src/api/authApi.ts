@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AuthUser, LoginRequest, RegisterRequest } from '../types/auth';
+import type { AuthUser, ForgotPasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest } from '../types/auth';
 
 const API_URL = 'http://localhost:8080/api/auth';
 
@@ -12,5 +12,13 @@ export const authApi = {
     register: async (data: RegisterRequest): Promise<AuthUser> => {
         const response = await axios.post<AuthUser>(`${API_URL}/register`, data);
         return response.data;
+    },
+
+    forgotPassword: async (data: ForgotPasswordRequest): Promise<void> => {
+        await axios.post(`${API_URL}/forgot-password`, data);
+    },
+
+    resetPassword: async (data: ResetPasswordRequest): Promise<void> => {
+        await axios.post(`${API_URL}/reset-password`, data);
     },
 };

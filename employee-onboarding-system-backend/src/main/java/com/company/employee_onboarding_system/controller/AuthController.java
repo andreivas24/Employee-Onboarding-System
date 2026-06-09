@@ -1,8 +1,6 @@
 package com.company.employee_onboarding_system.controller;
 
-import com.company.employee_onboarding_system.dto.AuthResponseDto;
-import com.company.employee_onboarding_system.dto.LoginRequestDto;
-import com.company.employee_onboarding_system.dto.RegisterRequestDto;
+import com.company.employee_onboarding_system.dto.*;
 import com.company.employee_onboarding_system.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,5 +22,15 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponseDto login(@Valid @RequestBody LoginRequestDto dto) {
         return authService.login(dto);
+    }
+
+    @PostMapping("/forgot-password")
+    public void forgotPassword(@Valid @RequestBody ForgotPasswordRequestDto dto) {
+        authService.forgotPassword(dto);
+    }
+
+    @PostMapping("/reset-password")
+    public void resetPassword(@Valid @RequestBody ResetPasswordRequestDto dto) {
+        authService.resetPassword(dto);
     }
 }

@@ -9,7 +9,7 @@ type Props = {
   onProfileUpdated: (profile: UserProfile) => void;
 };
 
-function ProfilePage({ user, onProfileUpdated }: Props) {
+function ProfilePage({ onProfileUpdated }: Props) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [fullName, setFullName] = useState('');
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
@@ -26,7 +26,7 @@ function ProfilePage({ user, onProfileUpdated }: Props) {
 
   const loadProfile = async () => {
     try {
-      const data = await profileApi.getProfile(user.email);
+      const data = await profileApi.getProfile();
       setProfile(data);
       setFullName(data.fullName);
     } catch {
@@ -48,13 +48,13 @@ function ProfilePage({ user, onProfileUpdated }: Props) {
       let updatedProfile = profile;
 
       if (fullName !== profile.fullName) {
-        updatedProfile = await profileApi.updateProfile(user.email, {
+        updatedProfile = await profileApi.updateProfile({
           fullName,
         });
       }
 
       if (profileImageFile) {
-        updatedProfile = await profileApi.updateAvatar(user.email, profileImageFile);
+        updatedProfile = await profileApi.updateAvatar(profileImageFile);
       }
 
       setProfile(updatedProfile);

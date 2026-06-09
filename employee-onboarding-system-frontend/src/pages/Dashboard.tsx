@@ -2,11 +2,14 @@
 import { useEffect, useState } from 'react';
 import { onboardingApi } from '../api/onboardingApi';
 import type { FinanceApprovalRequest, ITProvisioningRequest, OnboardingRequest, UpdateOnboardingRequest, OnboardingHistory, DashboardStats } from '../types/onboarding';
-import type { UserRole } from '../types/auth';
+import type { UserRole, AuthUser } from '../types/auth';
+import { commentApi } from '../api/commentApi';
+import type { OnboardingComment } from '../types/comment';
 import '../styles/Dashboard.css';
 
 type Props = {
   role: UserRole;
+  user: AuthUser;
   onCreateRequest?: () => void;
 };
 
@@ -23,6 +26,12 @@ function Dashboard({ role, onCreateRequest }: Props) {
     const [currentPage, setCurrentPage] = useState(1);
 
     const pageSize = 10;
+
+    const [selectedCommentsRequest, setSelectedCommentsRequest] = useState<OnboardingRequest | null>(null);
+
+    const [comments, setComments] = useState<OnboardingComment[]>([]);
+    const [commentText, setCommentText] = useState('');
+    const [commentsLoading, setCommentsLoading] = useState(false);
 
     const [selectedEditRequest, setSelectedEditRequest] = useState<OnboardingRequest | null>(null);
     const [editForm, setEditForm] = useState<UpdateOnboardingRequest>({
@@ -59,6 +68,62 @@ function Dashboard({ role, onCreateRequest }: Props) {
         setTimeout(() => {
             setNotification(null);
         }, 3500);
+    };
+
+    const handleExportExcel = async () => {
+        try {
+            await onboardingApi.exportExcel();
+            showNotification('success', 'Excel file exported successfully.');
+        } catch {
+            showNotification('error', 'Failed to export Excel file.');
+        }
+    };
+
+    const openCommentsModal = async (request: OnboardingRequest) => {
+        try {
+            setSelectedCommentsRequest(request);
+            setCommentsLoading(true);
+
+            const data = await commentApi.getComments(request.id);
+            setComments(data);
+        } catch {
+            showNotification('error', 'Failed to load comments.');
+        } finally {
+            setCommentsLoading(false);
+        }
+    };
+
+    const closeCommentsModal = () => {
+        setSelectedCommentsRequest(null);
+        setComments([]);
+        setCommentText('');
+    };
+
+    const handleAddComment = async () => {
+        if (!selectedCommentsRequest) {
+            return;
+        }
+
+        if (!commentText.trim()) {
+            showNotification('error', 'Comment cannot be empty.');
+            return;
+        }
+
+        try {
+            await commentApi.addComment(
+                selectedCommentsRequest.id,
+                { commentText }
+            );
+
+            setCommentText('');
+
+            const data = await commentApi.getComments(selectedCommentsRequest.id);
+            setComments(data);
+
+            showNotification('success', 'Comment added successfully.');
+        } catch {
+            showNotification('error', 'Failed to add comment.');
+        }
     };
 
     const filteredRequests = requests.filter((request) => {
@@ -151,7 +216,7 @@ function Dashboard({ role, onCreateRequest }: Props) {
 
     const handleApprove = async (request: OnboardingRequest) => {
         try {
-            await onboardingApi.approve(role, request.id);
+            await onboardingApi.approve(request.id);
             showNotification(
                 'success',
                 request.hardwareTier === 'PREMIUM'
@@ -172,7 +237,7 @@ function Dashboard({ role, onCreateRequest }: Props) {
         }
 
         try {
-            await onboardingApi.reject(role, request.id, {
+            await onboardingApi.reject(request.id, {
                 rejectionReason: reason,
             });
             showNotification(
@@ -192,7 +257,7 @@ function Dashboard({ role, onCreateRequest }: Props) {
 
         if (confirmWithoutChanges) {
             try {
-                await onboardingApi.resubmit(role, request.id);
+                await onboardingApi.resubmit(request.id);
                 showNotification(
                     'success',
                     'Request resubmitted by HR and sent back to Manager Review.'
@@ -243,8 +308,8 @@ function Dashboard({ role, onCreateRequest }: Props) {
         }
 
         try {
-            await onboardingApi.update(role, selectedEditRequest.id, editForm);
-            await onboardingApi.resubmit(role, selectedEditRequest.id);
+            await onboardingApi.update(selectedEditRequest.id, editForm);
+            await onboardingApi.resubmit(selectedEditRequest.id);
 
             closeEditForm();
 
@@ -297,7 +362,7 @@ function Dashboard({ role, onCreateRequest }: Props) {
         }
 
         try {
-            await onboardingApi.approve(role, selectedItRequest.id, itForm);
+            await onboardingApi.approve(selectedItRequest.id, itForm);
             showNotification(
                 'success',
                 'IT provisioning completed. Onboarding request is now completed.'
@@ -368,7 +433,6 @@ function Dashboard({ role, onCreateRequest }: Props) {
 
         try {
             await onboardingApi.financeApprove(
-                role,
                 selectedFinanceRequest.id,
                 financeForm
             );
@@ -401,6 +465,10 @@ function Dashboard({ role, onCreateRequest }: Props) {
                 Create Request
                 </button>
             )}
+
+            <button className="secondary-button" onClick={handleExportExcel}>
+                Export Excel
+            </button>
         </div>
 
         {stats && (
@@ -482,6 +550,7 @@ function Dashboard({ role, onCreateRequest }: Props) {
                 <th>Job Description</th>
                 <th>Actions</th>
                 <th>History</th>
+                <th>Comments</th>
                 </tr>
             </thead>
 
@@ -585,6 +654,15 @@ function Dashboard({ role, onCreateRequest }: Props) {
                                 View History
                             </button>
                         </td>
+
+                        <td>
+                            <button
+                                className="history-button"
+                                onClick={() => openCommentsModal(request)}
+                            >
+                                Comments
+                            </button>
+                        </td>
                     </tr>
                 ))}
             </tbody>
@@ -634,6 +712,64 @@ function Dashboard({ role, onCreateRequest }: Props) {
                     Close
                     </button>
                 </div>
+                </div>
+            </div>
+        )}
+
+        {selectedCommentsRequest && (
+            <div className="modal-overlay">
+                <div className="modal-card comments-modal-card">
+                    <h2>Request Comments</h2>
+                    <p>
+                        Discussion for <strong>{selectedCommentsRequest.employeeName}</strong>
+                    </p>
+
+                    <div className="comment-input-section">
+                        <textarea
+                            placeholder="Write a comment..."
+                            value={commentText}
+                            onChange={(event) => setCommentText(event.target.value)}
+                        />
+
+                        <button className="primary-button" onClick={handleAddComment}>
+                            Add Comment
+                        </button>
+                    </div>
+
+                    {commentsLoading && (
+                        <p className="dashboard-message">Loading comments...</p>
+                    )}
+
+                    {!commentsLoading && comments.length === 0 && (
+                        <p className="no-actions-label">No comments yet.</p>
+                    )}
+
+                    {!commentsLoading && comments.length > 0 && (
+                        <div className="comments-list">
+                            {comments.map((comment) => (
+                                <div className="comment-item" key={comment.id}>
+                                    <div className="comment-header">
+                                        <strong>{comment.authorName}</strong>
+                                        <span className={`role-badge role-${comment.authorRole.toLowerCase()}`}>
+                                            {comment.authorRole}
+                                        </span>
+                                    </div>
+
+                                <p>{comment.commentText}</p>
+
+                                <span className="comment-date">
+                                    {new Date(comment.createdAt).toLocaleString()}
+                                </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="modal-actions">
+                        <button className="secondary-button" onClick={closeCommentsModal}>
+                            Close
+                        </button>
+                    </div>
                 </div>
             </div>
         )}

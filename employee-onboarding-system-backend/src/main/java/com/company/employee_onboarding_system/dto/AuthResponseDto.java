@@ -12,4 +12,6 @@ public class AuthResponseDto {
     private String fullName;
     private String email;
     private Role role;
+    private String profileImageUrl;
+    private String token;
 }

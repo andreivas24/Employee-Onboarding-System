@@ -4,13 +4,9 @@ import type { UserRole } from '../types/auth';
 import type { User } from '../types/user';
 import '../styles/AdminPanel.css';
 
-type Props = {
-    role: UserRole;
-};
-
 const roles: UserRole[] = ['VIEWER', 'HR', 'MANAGER', 'FINANCE', 'IT', 'ADMIN'];
 
-function AdminPanel({ role }: Props) {
+function AdminPanel() {
     const [users, setUsers] = useState<User[]>([]);
     const [selectedRoles, setSelectedRoles] = useState<Record<number, UserRole>>({});
     const [message, setMessage] = useState('');
@@ -18,7 +14,7 @@ function AdminPanel({ role }: Props) {
 
     const loadUsers = async () => {
         try {
-            const data = await adminApi.getUsers(role);
+            const data = await adminApi.getUsers();
             setUsers(data);
 
             const rolesByUser: Record<number, UserRole> = {};
@@ -48,7 +44,7 @@ function AdminPanel({ role }: Props) {
         try {
             const selectedRole = selectedRoles[user.id];
 
-            await adminApi.updateUserRole(role, user.id, {
+            await adminApi.updateUserRole(user.id, {
                 role: selectedRole,
             });
 

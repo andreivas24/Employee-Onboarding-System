@@ -4,6 +4,7 @@ import com.company.employee_onboarding_system.dto.UpdateUserRoleDto;
 import com.company.employee_onboarding_system.entity.User;
 import com.company.employee_onboarding_system.enums.Role;
 import com.company.employee_onboarding_system.service.AdminService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -20,17 +21,23 @@ public class AdminController {
 
     @GetMapping("/users")
     public List<User> getAllUsers(
-        @RequestHeader("X-User-Role") Role role
+        HttpServletRequest request
     ) {
+        Role role = getRoleFromToken(request);
         return adminService.getAllUsers(role);
     }
 
     @PutMapping("/users/{id}/role")
     public User updateUserRole(
-        @RequestHeader("X-User-Role") Role role,
+        HttpServletRequest request,
         @PathVariable Long id,
         @Valid @RequestBody UpdateUserRoleDto dto
     ) {
+        Role role = getRoleFromToken(request);
         return adminService.updateUserRole(role, id, dto);
+    }
+
+    private Role getRoleFromToken(HttpServletRequest request) {
+        return Role.valueOf((String) request.getAttribute("userRole"));
     }
 }

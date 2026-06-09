@@ -13,6 +13,10 @@ function Login({ onLogin, onGoToRegister }: Props) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotMessage, setForgotMessage] = useState('');
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
@@ -22,6 +26,15 @@ function Login({ onLogin, onGoToRegister }: Props) {
       onLogin(user);
     } catch {
       setError('Invalid email or password.');
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    try {
+      await authApi.forgotPassword({ email: forgotEmail });
+      setForgotMessage('If the email exists, a reset link has been sent.');
+    } catch {
+      setForgotMessage('Failed to request password reset.');
     }
   };
 
@@ -51,12 +64,56 @@ function Login({ onLogin, onGoToRegister }: Props) {
           />
 
           <button type="submit">Login</button>
+
+          <button
+            type="button"
+            className="link-button"
+            onClick={() => setShowForgotModal(true)}
+          >
+            Forgot password?
+          </button>
         </form>
 
         <button className="link-button" onClick={onGoToRegister}>
           Create an account
         </button>
       </section>
+
+      {showForgotModal && (
+        <div className="auth-modal-overlay">
+          <div className="auth-modal-card">
+            <h2>Reset Password</h2>
+            <p>Enter your email and we will send you a reset link.</p>
+
+            {forgotMessage && <p className="auth-info-message">{forgotMessage}</p>}
+
+            <div className="login-form">
+              <label>Email</label>
+              <input
+                type="email"
+                value={forgotEmail}
+                onChange={(event) => setForgotEmail(event.target.value)}
+              />
+
+              <button type="button" onClick={handleForgotPassword}>
+                Send Reset Link
+              </button>
+
+              <button
+                type="button"
+                className="modal-cancel-button"
+                onClick={() => {
+                  setShowForgotModal(false);
+                  setForgotEmail('');
+                  setForgotMessage('');
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

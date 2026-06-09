@@ -3,6 +3,7 @@ package com.company.employee_onboarding_system.controller;
 import com.company.employee_onboarding_system.dto.UpdateProfileDto;
 import com.company.employee_onboarding_system.dto.UserProfileDto;
 import com.company.employee_onboarding_system.service.ProfileService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -23,32 +24,47 @@ public class ProfileController {
 
     @GetMapping
     public UserProfileDto getProfile(
-        @RequestHeader("X-User-Email") String email
+        HttpServletRequest request
     ) {
+        String email = getEmailFromToken(request);
+
         return profileService.getProfile(email);
     }
 
     @PutMapping
     public UserProfileDto updateProfile(
-        @RequestHeader("X-User-Email") String email,
+        HttpServletRequest request,
         @Valid @RequestBody UpdateProfileDto dto
     ) {
+        String email = getEmailFromToken(request);
+
         return profileService.updateProfile(email, dto);
     }
 
     @PostMapping("/avatar")
     public UserProfileDto updateAvatar(
-            @RequestHeader("X-User-Email") String email,
-            @RequestParam("file") MultipartFile file
+        HttpServletRequest request,
+        @RequestParam("file") MultipartFile file
     ) throws IOException {
+
+        String email = getEmailFromToken(request);
+
         String uploadDir = "uploads/";
         Files.createDirectories(Paths.get(uploadDir));
 
-        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+        String fileName =
+                System.currentTimeMillis()
+                    + "_"
+                    + file.getOriginalFilename();
+
         Path filePath = Paths.get(uploadDir + fileName);
 
         Files.write(filePath, file.getBytes());
 
         return profileService.updateAvatarFile(email, fileName);
+    }
+
+    private String getEmailFromToken(HttpServletRequest request) {
+        return (String) request.getAttribute("userEmail");
     }
 }

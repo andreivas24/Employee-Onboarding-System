@@ -12,7 +12,7 @@ type Props = {
     setIsFormVisible: (value: boolean) => void;
 };
 
-function CreateRequest({ role, onCreated, isFormVisible, setIsFormVisible }: Props) {
+function CreateRequest({ onCreated, isFormVisible, setIsFormVisible }: Props) {
     const [formData, setFormData] = useState<CreateOnboardingRequest>({
     employeeName: '',
     employeeRole: '',
@@ -51,7 +51,7 @@ function CreateRequest({ role, onCreated, isFormVisible, setIsFormVisible }: Pro
         event.preventDefault();
 
         try {
-            await onboardingApi.create(role, {
+            await onboardingApi.create({
                 ...formData,
                 hardwareTier: formData.hardwareTier as HardwareTier,
             });

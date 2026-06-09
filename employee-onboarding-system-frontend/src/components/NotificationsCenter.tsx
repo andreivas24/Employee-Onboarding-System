@@ -15,8 +15,8 @@ function NotificationsCenter({ role }: Props) {
 
     const loadNotifications = async () => {
     const [items, count] = await Promise.all([
-        notificationApi.getAll(role),
-        notificationApi.getUnreadCount(role),
+        notificationApi.getAll(),
+        notificationApi.getUnreadCount(),
     ]);
 
     setNotifications(items);
@@ -52,7 +52,7 @@ function NotificationsCenter({ role }: Props) {
     };
 
     const handleMarkAllAsRead = async () => {
-        await notificationApi.markAllAsRead(role);
+        await notificationApi.markAllAsRead();
         await loadNotifications();
     };
 

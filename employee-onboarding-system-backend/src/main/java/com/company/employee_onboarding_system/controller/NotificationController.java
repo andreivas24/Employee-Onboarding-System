@@ -3,6 +3,7 @@ package com.company.employee_onboarding_system.controller;
 import com.company.employee_onboarding_system.entity.Notification;
 import com.company.employee_onboarding_system.enums.Role;
 import com.company.employee_onboarding_system.service.NotificationService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,15 +19,17 @@ public class NotificationController {
 
     @GetMapping
     public List<Notification> getNotificationsForRole(
-        @RequestHeader("X-User-Role") Role role
+        HttpServletRequest request
     ) {
+        Role role = getRoleFromToken(request);
         return notificationService.getNotificationsForRole(role);
     }
 
     @GetMapping("/unread-count")
     public long getUnreadCount(
-        @RequestHeader("X-User-Role") Role role
+        HttpServletRequest request
     ) {
+        Role role = getRoleFromToken(request);
         return notificationService.getUnreadCount(role);
     }
 
@@ -37,8 +40,13 @@ public class NotificationController {
 
     @PostMapping("/read-all")
     public void markAllAsRead(
-        @RequestHeader("X-User-Role") Role role
+        HttpServletRequest request
     ) {
+        Role role = getRoleFromToken(request);
         notificationService.markAllAsRead(role);
+    }
+
+    private Role getRoleFromToken(HttpServletRequest request) {
+        return Role.valueOf((String) request.getAttribute("userRole"));
     }
 }

@@ -5,6 +5,7 @@ import com.company.employee_onboarding_system.entity.OnboardingHistory;
 import com.company.employee_onboarding_system.entity.OnboardingRequest;
 import com.company.employee_onboarding_system.service.OnboardingService;
 import com.company.employee_onboarding_system.enums.Role;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -21,9 +22,10 @@ public class OnboardingController {
 
     @PostMapping
     public OnboardingRequest createRequest(
-        @RequestHeader("X-User-Role") Role role,
+        HttpServletRequest request,
         @Valid @RequestBody CreateOnboardingRequestDto dto
     ) {
+        Role role = getRoleFromToken(request);
         return onboardingService.createRequest(role, dto);
     }
 
@@ -39,45 +41,50 @@ public class OnboardingController {
 
     @PutMapping("/{id}")
     public OnboardingRequest updateRequest(
-        @RequestHeader("X-User-Role") Role role,
+        HttpServletRequest request,
         @PathVariable Long id,
         @Valid @RequestBody UpdateOnboardingRequestDto dto
     ) {
+        Role role = getRoleFromToken(request);
         return onboardingService.updateRequest(role, id, dto);
     }
 
     @PostMapping("/{id}/resubmit")
     public OnboardingRequest resubmitRequest(
-        @RequestHeader("X-User-Role") Role role,
+        HttpServletRequest request,
         @PathVariable Long id
     ) {
+        Role role = getRoleFromToken(request);
         return onboardingService.resubmitRequest(role, id);
     }
 
     @PostMapping("/{id}/approve")
     public OnboardingRequest approveRequest(
-        @RequestHeader("X-User-Role") Role role,
+        HttpServletRequest request,
         @PathVariable Long id,
         @RequestBody(required = false) ITProvisioningDto itProvisioningDto
     ) {
+        Role role = getRoleFromToken(request);
         return onboardingService.approveRequest(role, id, itProvisioningDto);
     }
 
     @PostMapping("/{id}/reject")
     public OnboardingRequest rejectRequest(
-        @RequestHeader("X-User-Role") Role role,
+        HttpServletRequest request,
         @PathVariable Long id,
         @Valid @RequestBody RejectRequestDto dto
     ) {
+        Role role = getRoleFromToken(request);
         return onboardingService.rejectRequest(role, id, dto);
     }
 
     @PostMapping("/{id}/finance-approve")
     public OnboardingRequest financeApproveRequest(
-        @RequestHeader("X-User-Role") Role role,
+        HttpServletRequest request,
         @PathVariable Long id,
         @Valid @RequestBody FinanceApprovalDto dto
     ) {
+        Role role = getRoleFromToken(request);
         return onboardingService.financeApproveRequest(role, id, dto);
     }
 
@@ -89,5 +96,10 @@ public class OnboardingController {
     @GetMapping("/stats")
     public DashboardStatsDto getDashboardStats() {
         return onboardingService.getDashboardStats();
+    }
+
+    private Role getRoleFromToken(HttpServletRequest request) {
+        String role = (String) request.getAttribute("userRole");
+        return Role.valueOf(role);
     }
 }

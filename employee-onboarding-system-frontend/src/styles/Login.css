@@ -101,3 +101,51 @@
 .link-button:hover {
   text-decoration: underline;
 }
+
+.auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 20, 95, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 24px;
+}
+
+.auth-modal-card {
+  width: 100%;
+  max-width: 460px;
+  background: var(--card-white);
+  padding: 36px;
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+}
+
+.auth-modal-card h2 {
+  margin: 0 0 10px;
+  color: var(--dark-navy);
+  font-size: 28px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.auth-modal-card p {
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.auth-info-message,
+.success-message {
+  background: var(--success-bg);
+  color: var(--success-text);
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.modal-cancel-button {
+  background: #edf4ff !important;
+  color: var(--primary-blue) !important;
+}

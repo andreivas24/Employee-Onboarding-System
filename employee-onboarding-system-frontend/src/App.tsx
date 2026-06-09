@@ -9,6 +9,7 @@ import './App.css';
 import NotificationsCenter from './components/NotificationsCenter';
 import ProfilePage from './pages/ProfilePage';
 import type { UserProfile } from './types/profile';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -84,6 +85,14 @@ function App() {
     );
   }
 
+  const isResetPasswordPage = window.location.pathname === '/reset-password';
+
+  if (isResetPasswordPage) {
+    return (
+      <ResetPassword/>
+    );
+  }
+
   if (!user) {
     return (
       <Login
@@ -121,6 +130,15 @@ function App() {
         </div>
 
         <div className="app-header-actions">
+          {activePage !== 'dashboard' && (
+            <button
+              className="nav-button"
+              onClick={() => setActivePage('dashboard')}
+            >
+              Dashboard
+            </button>
+          )}
+
           {user.role === 'ADMIN' && (
             <button
               className="nav-button"
@@ -134,12 +152,14 @@ function App() {
 
           <NotificationsCenter role={user.role} />
 
-          <button
-            className="nav-button"
-            onClick={() => setActivePage('profile')}
-          >
-            Profile
-          </button>
+          {activePage !== 'profile' && (
+            <button
+              className="nav-button"
+              onClick={() => setActivePage('profile')}
+            >
+              Profile
+            </button>
+          )}
 
           <button className="logout-button" onClick={handleLogout}>
             Logout
@@ -156,6 +176,7 @@ function App() {
           <Dashboard
             key={refreshKey}
             role={user.role}
+            user={user}
             onCreateRequest={
               user.role === 'HR' ? handleOpenCreateRequest : undefined
             }
@@ -173,7 +194,7 @@ function App() {
       )}
 
       {activePage === 'admin' && user.role === 'ADMIN' && (
-        <AdminPanel role={user.role} />
+        <AdminPanel/>
       )}
     </div>
   );

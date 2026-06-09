@@ -1,124 +1,147 @@
 import axios from 'axios';
+import { getAuthHeader } from './authHeader';
 import type {
   CreateOnboardingRequest,
+  DashboardStats,
+  FinanceApprovalRequest,
   ITProvisioningRequest,
+  OnboardingHistory,
   OnboardingRequest,
   RejectRequest,
   UpdateOnboardingRequest,
-  FinanceApprovalRequest,
-  OnboardingHistory,
-  DashboardStats,
 } from '../types/onboarding';
-import type { UserRole } from '../types/auth';
 
 const API_URL = 'http://localhost:8080/api/onboarding';
 
-const roleHeader = (role: UserRole) => ({
-  headers: {
-    'X-User-Role': role,
-    'Content-Type': 'application/json',
-  },
-});
-
 export const onboardingApi = {
     getAll: async (): Promise<OnboardingRequest[]> => {
-        const response = await axios.get<OnboardingRequest[]>(API_URL);
+        const response = await axios.get<OnboardingRequest[]>(
+            API_URL,
+            getAuthHeader()
+        );
+
         return response.data;
     },
 
     getById: async (id: number): Promise<OnboardingRequest> => {
-        const response = await axios.get<OnboardingRequest>(`${API_URL}/${id}`);
+        const response = await axios.get<OnboardingRequest>(
+            `${API_URL}/${id}`,
+            getAuthHeader()
+        );
+
         return response.data;
     },
 
     create: async (
-        role: UserRole,
         data: CreateOnboardingRequest
     ): Promise<OnboardingRequest> => {
         const response = await axios.post<OnboardingRequest>(
             API_URL,
             data,
-            roleHeader(role)
-        )   ;
+            getAuthHeader()
+        );
+
         return response.data;
     },
 
     update: async (
-        role: UserRole,
         id: number,
         data: UpdateOnboardingRequest
     ): Promise<OnboardingRequest> => {
-        const response = await axios.put<OnboardingRequest>(
-            `${API_URL}/${id}`,
-            data,
-            roleHeader(role)
-        );
-        return response.data;
+    const response = await axios.put<OnboardingRequest>(
+        `${API_URL}/${id}`,
+        data,
+        getAuthHeader()
+    );
+
+    return response.data;
     },
 
     approve: async (
-        role: UserRole,
         id: number,
         data?: ITProvisioningRequest
-        ): Promise<OnboardingRequest> => {
-        const response = await axios.post<OnboardingRequest>(
-            `${API_URL}/${id}/approve`,
-            data ?? {},
-            roleHeader(role)
-        );
+    ): Promise<OnboardingRequest> => {
+    const response = await axios.post<OnboardingRequest>(
+        `${API_URL}/${id}/approve`,
+        data ?? {},
+        getAuthHeader()
+    );
 
-        return response.data;
+    return response.data;
     },
 
     reject: async (
-        role: UserRole,
         id: number,
         data: RejectRequest
-        ): Promise<OnboardingRequest> => {
-            const response = await axios.post<OnboardingRequest>(
-                `${API_URL}/${id}/reject`,
-                data,
-                roleHeader(role)
-            );
+    ): Promise<OnboardingRequest> => {
+        const response = await axios.post<OnboardingRequest>(
+            `${API_URL}/${id}/reject`,
+            data,
+            getAuthHeader()
+        );
+
         return response.data;
     },
 
-    resubmit: async (
-        role: UserRole,
-        id: number
-        ): Promise<OnboardingRequest> => {
+    resubmit: async (id: number): Promise<OnboardingRequest> => {
         const response = await axios.post<OnboardingRequest>(
             `${API_URL}/${id}/resubmit`,
             null,
-            roleHeader(role)
+            getAuthHeader()
         );
+
         return response.data;
     },
 
     financeApprove: async (
-        role: UserRole,
         id: number,
         data: FinanceApprovalRequest
         ): Promise<OnboardingRequest> => {
-            const response = await axios.post<OnboardingRequest>(
-                `${API_URL}/${id}/finance-approve`,
-                data,
-                roleHeader(role)
-            );
+        const response = await axios.post<OnboardingRequest>(
+            `${API_URL}/${id}/finance-approve`,
+            data,
+            getAuthHeader()
+        );
 
         return response.data;
     },
 
     getHistory: async (id: number): Promise<OnboardingHistory[]> => {
         const response = await axios.get<OnboardingHistory[]>(
-            `${API_URL}/${id}/history`
+            `${API_URL}/${id}/history`,
+            getAuthHeader()
         );
 
         return response.data;
     },
 
     getStats: async (): Promise<DashboardStats> => {
-        const response = await axios.get<DashboardStats>(`${API_URL}/stats`);
+        const response = await axios.get<DashboardStats>(
+            `${API_URL}/stats`,
+            getAuthHeader()
+        );
+
         return response.data;
+    },
+
+    exportExcel: async (): Promise<void> => {
+        const response = await axios.get(
+            'http://localhost:8080/api/onboarding/export/excel',
+            {
+                ...getAuthHeader(),
+                responseType: 'blob',
+            }
+        );
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+
+        link.href = url;
+        link.setAttribute('download', 'onboarding_requests.xlsx');
+        document.body.appendChild(link);
+        link.click();
+
+        link.remove();
+        window.URL.revokeObjectURL(url);
     },
 };

@@ -545,3 +545,72 @@
     grid-template-columns: 1fr;
   }
 }
+
+.comments-modal-card {
+  max-width: 720px;
+}
+
+.comment-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.comment-input-section textarea {
+  width: 100%;
+  min-height: 110px;
+  border: 1px solid #d6dce8;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-dark);
+  outline: none;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.comment-input-section textarea:focus {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(45, 127, 249, 0.16);
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.comment-item {
+  background: #f8fbff;
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.comment-header strong {
+  color: var(--dark-navy);
+}
+
+.comment-item p {
+  margin: 0 0 8px;
+  color: var(--text-dark);
+  line-height: 1.5;
+}
+
+.comment-date {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
