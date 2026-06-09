@@ -261,7 +261,7 @@ The **OnboardingHistory** entity provides a complete audit trail for every workf
 ## Clone Repository
 
 ```bash
-git clone https://github.com/andreivas24/<repository-name>.git
+git clone https://github.com/andreivas24/Employee-Onboarding-System.git
 ```
 
 ## Backend Setup
