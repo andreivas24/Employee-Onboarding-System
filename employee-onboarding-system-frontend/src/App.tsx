@@ -6,7 +6,7 @@ import Register from './pages/Register';
 import AdminPanel from './pages/AdminPanel';
 import type { AuthUser } from './types/auth';
 import './App.css';
-import NotificationsCenter from './components/NotificationsCenter';
+import NotificationsCenter from './components/notifications/NotificationsCenter';
 import ProfilePage from './pages/ProfilePage';
 import type { UserProfile } from './types/profile';
 import ResetPassword from './pages/ResetPassword';
@@ -79,7 +79,7 @@ function App() {
   if (!user && showRegister) {
     return (
       <Register
-        onRegister={handleLogin}
+        onRegister={() => setShowRegister(false)}
         onGoToLogin={() => setShowRegister(false)}
       />
     );
@@ -139,14 +139,12 @@ function App() {
             </button>
           )}
 
-          {user.role === 'ADMIN' && (
+          {user.role === 'ADMIN' && activePage !== 'admin' && (
             <button
               className="nav-button"
-              onClick={() =>
-                setActivePage(activePage === 'dashboard' ? 'admin' : 'dashboard')
-              }
+              onClick={() => setActivePage('admin')}
             >
-              {activePage === 'dashboard' ? 'Admin Panel' : 'Dashboard'}
+              Admin Panel
             </button>
           )}
 
@@ -193,9 +191,7 @@ function App() {
         </>
       )}
 
-      {activePage === 'admin' && user.role === 'ADMIN' && (
-        <AdminPanel/>
-      )}
+      {activePage === 'admin' && user.role === 'ADMIN' && <AdminPanel />}
     </div>
   );
 }

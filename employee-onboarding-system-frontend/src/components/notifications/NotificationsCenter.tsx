@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { notificationApi } from '../api/notificationApi';
-import type { UserRole } from '../types/auth';
-import type { NotificationItem } from '../types/notification';
-import '../styles/NotificationsCenter.css';
+import { notificationApi } from '../../api/notificationApi';
+import type { UserRole } from '../../types/auth';
+import type { NotificationItem } from '../../types/notification';
+import '../../styles/NotificationsCenter.css';
 
 type Props = {
     role: UserRole;

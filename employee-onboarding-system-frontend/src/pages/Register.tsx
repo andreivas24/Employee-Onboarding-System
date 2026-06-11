@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { authApi } from '../api/authApi';
-import type { AuthUser } from '../types/auth';
 import '../styles/Login.css';
 
 type Props = {
-  onRegister: (user: AuthUser) => void;
+  onRegister: () => void;
   onGoToLogin: () => void;
 };
 
@@ -18,14 +17,13 @@ function Register({ onRegister, onGoToLogin }: Props) {
     event.preventDefault();
 
     try {
-      const user = await authApi.register({
+      await authApi.register({
         fullName,
         email,
         password,
       });
 
-      localStorage.setItem('authUser', JSON.stringify(user));
-      onRegister(user);
+      onRegister();
     } catch {
       setError('Registration failed. Email may already be registered.');
     }
