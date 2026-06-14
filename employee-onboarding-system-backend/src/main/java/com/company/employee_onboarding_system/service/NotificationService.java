@@ -15,6 +15,7 @@ import java.util.List;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final MessageService messageService;
 
     public Notification createNotification(
         Long requestId,
@@ -44,7 +45,7 @@ public class NotificationService {
 
     public Notification markAsRead(Long id) {
         Notification notification = notificationRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException(messageService.get("notification.not-found", id)));
 
         notification.setRead(true);
 

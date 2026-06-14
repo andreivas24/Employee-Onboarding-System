@@ -124,6 +124,13 @@ export const onboardingApi = {
         return response.data;
     },
 
+    deleteRequest: async (id: number): Promise<void> => {
+        await axios.delete(
+            `${API_URL}/${id}`,
+            getAuthHeader()
+        );
+    },
+
     exportExcel: async (): Promise<void> => {
         const response = await axios.get(
             'http://localhost:8080/api/onboarding/export/excel',

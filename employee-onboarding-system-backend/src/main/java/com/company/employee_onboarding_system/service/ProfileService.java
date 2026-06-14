@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 public class ProfileService {
 
     private final UserRepository userRepository;
+    private final MessageService messageService;
 
     public UserProfileDto getProfile(String email) {
         User user = findUserByEmail(email);
@@ -41,9 +42,8 @@ public class ProfileService {
         return userRepository.findByEmail(email)
             .orElseThrow(() ->
                 new ResourceNotFoundException(
-                    "User not found with email: " + email
-                )
-            );
+                    messageService.get("profile.user.not-found", email)
+                ));
     }
 
     private UserProfileDto mapToDto(User user) {

@@ -14,6 +14,7 @@ type Props = {
     onOpenItForm: (request: OnboardingRequest) => void;
     onOpenHistory: (request: OnboardingRequest) => void;
     onOpenComments: (request: OnboardingRequest) => void;
+    onDelete: (request: OnboardingRequest) => void;
 };
 
 function DashboardTable({
@@ -29,6 +30,7 @@ function DashboardTable({
     onOpenItForm,
     onOpenHistory,
     onOpenComments,
+    onDelete,
 }: Props) {
     return (
         <table className="dashboard-table">
@@ -111,6 +113,15 @@ function DashboardTable({
 
                                 {request.status === 'COMPLETED' && (
                                     <span className="completed-label">Completed</span>
+                                )}
+
+                                {role === 'ADMIN' && (
+                                    <button
+                                        className="danger-button"
+                                        onClick={() => onDelete(request)}
+                                    >
+                                        Delete
+                                    </button>
                                 )}
 
                                 {!canApproveOrReject(request) &&

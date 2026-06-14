@@ -16,6 +16,7 @@ import java.util.List;
 public class ExportService {
 
     private final OnboardingRequestRepository onboardingRequestRepository;
+    private final MessageService messageService;
 
     public byte[] exportOnboardingRequestsToExcel() throws IOException {
         List<OnboardingRequest> requests = onboardingRequestRepository.findAll();
@@ -23,23 +24,25 @@ public class ExportService {
         try (Workbook workbook = new XSSFWorkbook();
              ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 
-            Sheet sheet = workbook.createSheet("Onboarding Requests");
+            Sheet sheet = workbook.createSheet(
+                messageService.get("export.sheet.onboarding-requests")
+            );
 
             String[] headers = {
-                "ID",
-                "Employee Name",
-                "Employee Role",
-                "Start Date",
-                "Hardware Tier",
-                "Status",
-                "Job Description",
-                "Rejection Reason",
-                "Company Email",
-                "Laptop Configuration",
-                "Approved Budget",
-                "Finance Notes",
-                "Created At",
-                "Updated At"
+                messageService.get("export.header.id"),
+                messageService.get("export.header.employee-name"),
+                messageService.get("export.header.employee-role"),
+                messageService.get("export.header.start-date"),
+                messageService.get("export.header.hardware-tier"),
+                messageService.get("export.header.status"),
+                messageService.get("export.header.job-description"),
+                messageService.get("export.header.rejection-reason"),
+                messageService.get("export.header.company-email"),
+                messageService.get("export.header.laptop-configuration"),
+                messageService.get("export.header.approved-budget"),
+                messageService.get("export.header.finance-notes"),
+                messageService.get("export.header.created-at"),
+                messageService.get("export.header.updated-at")
             };
 
             Row headerRow = sheet.createRow(0);

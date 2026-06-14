@@ -27,10 +27,13 @@ public class AuthService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailService emailService;
     private final JwtService jwtService;
+    private final MessageService messageService;
 
     public AuthResponseDto register(RegisterRequestDto dto) {
         if (userRepository.existsByEmail(dto.getEmail())) {
-            throw new BadRequestException("Email is already registered.");
+            throw new BadRequestException(
+                    messageService.get("auth.email.already-registered")
+            );
         }
 
         User user = User.builder()
@@ -47,10 +50,12 @@ public class AuthService {
 
     public AuthResponseDto login(LoginRequestDto dto) {
         User user = userRepository.findByEmail(dto.getEmail())
-            .orElseThrow(() -> new BadRequestException("Invalid email or password."));
+            .orElseThrow(() -> new BadRequestException(
+                    messageService.get("auth.invalid-credentials")
+            ));
 
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
-            throw new BadRequestException("Invalid email or password.");
+            throw new BadRequestException(messageService.get("auth.invalid-credentials"));
         }
 
         return mapToAuthResponse(user);
@@ -70,7 +75,7 @@ public class AuthService {
     @Transactional
     public void forgotPassword(ForgotPasswordRequestDto dto) {
         User user = userRepository.findByEmail(dto.getEmail())
-                .orElseThrow(() -> new BadRequestException("No user found with this email."));
+                .orElseThrow(() -> new BadRequestException(messageService.get("auth.user.email-not-found")));
 
         passwordResetTokenRepository.deleteByEmail(user.getEmail());
 
@@ -91,18 +96,18 @@ public class AuthService {
 
     public void resetPassword(ResetPasswordRequestDto dto) {
         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(dto.getToken())
-                .orElseThrow(() -> new BadRequestException("Invalid reset token."));
+                .orElseThrow(() -> new BadRequestException(messageService.get("auth.reset-token.invalid")));
 
         if (resetToken.isUsed()) {
-            throw new BadRequestException("Reset token has already been used.");
+            throw new BadRequestException(messageService.get("auth.reset-token.used"));
         }
 
         if (resetToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("Reset token has expired.");
+            throw new BadRequestException( messageService.get("auth.reset-token.expired"));
         }
 
         User user = userRepository.findByEmail(resetToken.getEmail())
-                .orElseThrow(() -> new BadRequestException("User not found."));
+                .orElseThrow(() -> new BadRequestException(messageService.get("auth.user.not-found")));
 
         user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
         userRepository.save(user);

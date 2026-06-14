@@ -1,47 +1,17 @@
-.create-request-section {
-  max-width: 1280px;
-  margin: 34px auto 70px;
-  padding: 0 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.create-open-button {
-  border: none;
-  border-radius: 12px;
-  padding: 14px 22px;
-  background: linear-gradient(90deg, var(--primary-blue), var(--primary-purple));
-  color: #ffffff;
-  font-weight: 900;
-  cursor: pointer;
-  box-shadow: 0 12px 26px rgba(45, 127, 249, 0.22);
-}
-
-.create-open-button:hover {
-  opacity: 0.94;
-  transform: translateY(-1px);
-}
-
-.create-request-card {
-  width: 100%;
-  max-width: 620px;
-  background: var(--card-white);
-  border: 1px solid var(--border-light);
-  border-radius: 20px;
-  padding: 42px;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.1);
+.create-request-modal-card {
+  width: min(760px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .create-request-header {
-  text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 26px;
 }
 
 .create-request-header h2 {
   margin: 0 0 10px;
   color: var(--dark-navy);
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 900;
 }
 
@@ -74,8 +44,8 @@
 .create-form-group textarea {
   width: 100%;
   border: 1px solid #d6dce8;
-  border-radius: 10px;
-  padding: 12px 14px;
+  border-radius: 12px;
+  padding: 13px 15px;
   font-size: 14px;
   color: var(--text-dark);
   background: #ffffff;
@@ -101,15 +71,15 @@
 }
 
 .create-form-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 14px;
   margin-top: 8px;
 }
 
 .create-submit-button,
 .create-cancel-button {
-  flex: 1;
-  height: 50px;
+  height: 42px;
   border: none;
   border-radius: 10px;
   font-weight: 900;
@@ -118,7 +88,7 @@
 
 .create-submit-button {
   background: linear-gradient(90deg, var(--primary-blue), var(--primary-purple));
-  color: white;
+  color: #ffffff;
 }
 
 .create-cancel-button {
@@ -132,11 +102,10 @@
 }
 
 .create-message {
-  margin: 16px 0;
+  margin: 0 0 18px;
   padding: 12px 16px;
   border-radius: 10px;
   font-weight: 800;
-  text-align: center;
 }
 
 .create-message-success {
@@ -150,7 +119,8 @@
 }
 
 @media (max-width: 768px) {
-  .create-request-card {
+  .create-request-modal-card {
+    width: 94vw;
     padding: 28px 22px;
   }
 
@@ -159,6 +129,6 @@
   }
 
   .create-form-actions {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 }

@@ -8,4 +8,6 @@ import java.util.List;
 public interface OnboardingCommentRepository extends JpaRepository<OnboardingComment, Long> {
 
     List<OnboardingComment> findByRequestIdOrderByCreatedAtDesc(Long requestId);
+
+    void deleteByRequestId(Long requestId);
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Dashboard from './pages/Dashboard';
-import CreateRequest from './pages/CreateRequest';
+import CreateRequest from './components/dashboard/modals/CreateRequestModal';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminPanel from './pages/AdminPanel';

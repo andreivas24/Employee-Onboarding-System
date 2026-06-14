@@ -11,4 +11,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     List<Notification> findByTargetRoleOrderByCreatedAtDesc(Role targetRole);
 
     long countByTargetRoleAndReadFalse(Role targetRole);
+
+    void deleteByRequestId(Long requestId);
 }

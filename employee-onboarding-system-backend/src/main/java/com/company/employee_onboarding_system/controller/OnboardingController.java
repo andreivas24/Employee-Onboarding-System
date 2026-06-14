@@ -93,6 +93,15 @@ public class OnboardingController {
         return onboardingService.getHistoryByRequestId(id);
     }
 
+    @DeleteMapping("/{id}")
+    public void deleteRequest(
+        HttpServletRequest request,
+        @PathVariable Long id
+    ) {
+        Role role = getRoleFromToken(request);
+        onboardingService.deleteRequest(role, id);
+    }
+
     @GetMapping("/stats")
     public DashboardStatsDto getDashboardStats() {
         return onboardingService.getDashboardStats();

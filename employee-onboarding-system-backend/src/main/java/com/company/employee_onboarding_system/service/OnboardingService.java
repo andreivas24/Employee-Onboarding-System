@@ -1,13 +1,14 @@
 package com.company.employee_onboarding_system.service;
 
 import com.company.employee_onboarding_system.dto.*;
+import com.company.employee_onboarding_system.entity.OnboardingHistory;
 import com.company.employee_onboarding_system.entity.OnboardingRequest;
+import com.company.employee_onboarding_system.entity.User;
 import com.company.employee_onboarding_system.enums.*;
-import com.company.employee_onboarding_system.repository.OnboardingRequestRepository;
 import com.company.employee_onboarding_system.exception.BadRequestException;
 import com.company.employee_onboarding_system.exception.ResourceNotFoundException;
-import com.company.employee_onboarding_system.entity.OnboardingHistory;
-import com.company.employee_onboarding_system.repository.OnboardingHistoryRepository;
+import com.company.employee_onboarding_system.repository.*;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,16 +20,32 @@ public class OnboardingService {
 
     private final OnboardingRequestRepository onboardingRequestRepository;
     private final OnboardingHistoryRepository onboardingHistoryRepository;
+    private final OnboardingCommentRepository onboardingCommentRepository;
+    private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final MessageService messageService;
+    private final EmailService emailService;
 
     public OnboardingRequest createRequest(Role role, CreateOnboardingRequestDto dto) {
         if (role != Role.HR) {
-            throw new BadRequestException("Only HR can create onboarding requests.");
+            throw new BadRequestException(messageService.get("onboarding.create.only-hr"));
+        }
+
+        boolean duplicateExists = onboardingRequestRepository
+            .existsByEmployeeNameIgnoreCaseAndEmployeeRoleIgnoreCaseAndStartDate(
+                dto.getEmployeeName().trim(),
+                dto.getEmployeeRole().trim(),
+                dto.getStartDate()
+            );
+
+        if (duplicateExists) {
+            throw new BadRequestException(messageService.get("onboarding.create.duplicate"));
         }
 
         OnboardingRequest request = OnboardingRequest.builder()
-            .employeeName(dto.getEmployeeName())
-            .employeeRole(dto.getEmployeeRole())
+            .employeeName(dto.getEmployeeName().trim())
+            .employeeRole(dto.getEmployeeRole().trim())
             .startDate(dto.getStartDate())
             .hardwareTier(dto.getHardwareTier())
             .jobDescription(dto.getJobDescription())
@@ -41,17 +58,28 @@ public class OnboardingService {
             savedRequest.getId(),
             HistoryAction.CREATED,
             role,
-            "Onboarding request created and sent to Manager Review."
+            messageService.get("history.created")
         );
 
         notifyRole(
             savedRequest.getId(),
             Role.MANAGER,
             NotificationType.REQUEST_CREATED,
-            "New onboarding request",
-            "HR created a new onboarding request for "
-                + savedRequest.getEmployeeName()
-                + ". It is waiting for Manager Review."
+            messageService.get("notification.request-created.title"),
+            messageService.get(
+                "notification.request-created.message",
+                savedRequest.getEmployeeName()
+            )
+        );
+
+        sendEmailToRole(
+            Role.MANAGER,
+            messageService.get("email.request-created.subject"),
+            messageService.get("notification.request-created.title"),
+            messageService.get(
+                "notification.request-created.message",
+                savedRequest.getEmployeeName()
+            )
         );
 
         return savedRequest;
@@ -63,26 +91,28 @@ public class OnboardingService {
 
     public OnboardingRequest getRequestById(Long id) {
         return onboardingRequestRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                            "Onboarding request not found with id: " + id
-                        )
-                );
+            .orElseThrow(() ->
+                    new ResourceNotFoundException(
+                        messageService.get("onboarding.not-found", id)
+                    )
+            );
     }
 
     public OnboardingRequest updateRequest(Role role, Long id, UpdateOnboardingRequestDto dto) {
         if (role != Role.HR) {
-            throw new BadRequestException("Only HR can update onboarding requests.");
+            throw new BadRequestException(messageService.get("onboarding.update.only-hr"));
         }
 
         OnboardingRequest request = getRequestById(id);
 
         if (request.getStatus() != OnboardingStatus.NEEDS_REWORK) {
-            throw new BadRequestException("Only requests with NEEDS_REWORK status can be updated.");
+            throw new BadRequestException(
+                messageService.get("onboarding.update.only-needs-rework")
+            );
         }
 
-        request.setEmployeeName(dto.getEmployeeName());
-        request.setEmployeeRole(dto.getEmployeeRole());
+        request.setEmployeeName(dto.getEmployeeName().trim());
+        request.setEmployeeRole(dto.getEmployeeRole().trim());
         request.setStartDate(dto.getStartDate());
         request.setHardwareTier(dto.getHardwareTier());
         request.setJobDescription(dto.getJobDescription());
@@ -93,7 +123,7 @@ public class OnboardingService {
             updatedRequest.getId(),
             HistoryAction.UPDATED,
             role,
-            "Request details updated by HR."
+            messageService.get("history.updated")
         );
 
         return updatedRequest;
@@ -101,13 +131,15 @@ public class OnboardingService {
 
     public OnboardingRequest resubmitRequest(Role role, Long id) {
         if (role != Role.HR) {
-            throw new BadRequestException("Only HR can resubmit onboarding requests.");
+            throw new BadRequestException(messageService.get("onboarding.resubmit.only-hr"));
         }
 
         OnboardingRequest request = getRequestById(id);
 
         if (request.getStatus() != OnboardingStatus.NEEDS_REWORK) {
-            throw new BadRequestException("Only requests with NEEDS_REWORK status can be resubmitted.");
+            throw new BadRequestException(
+                messageService.get("onboarding.resubmit.only-needs-rework")
+            );
         }
 
         request.setStatus(OnboardingStatus.MANAGER_REVIEW);
@@ -119,29 +151,46 @@ public class OnboardingService {
             resubmittedRequest.getId(),
             HistoryAction.RESUBMITTED,
             role,
-            "Request resubmitted and sent back to Manager Review."
+            messageService.get("history.resubmitted")
         );
 
         notifyRole(
             resubmittedRequest.getId(),
             Role.MANAGER,
             NotificationType.REQUEST_RESUBMITTED,
-            "Request resubmitted",
-            "HR resubmitted the onboarding request for "
-                + resubmittedRequest.getEmployeeName()
-                + ". It is waiting for Manager Review."
+            messageService.get("notification.request-resubmitted.title"),
+            messageService.get(
+                "notification.request-resubmitted.message",
+                resubmittedRequest.getEmployeeName()
+            )
+        );
+
+        sendEmailToRole(
+            Role.MANAGER,
+            messageService.get("email.request-resubmitted.subject"),
+            messageService.get("notification.request-resubmitted.title"),
+            messageService.get(
+                "notification.request-resubmitted.message",
+                resubmittedRequest.getEmployeeName()
+            )
         );
 
         return resubmittedRequest;
     }
 
-    public OnboardingRequest approveRequest(Role role, Long id, ITProvisioningDto itProvisioningDto) {
+    public OnboardingRequest approveRequest(
+        Role role,
+        Long id,
+        ITProvisioningDto itProvisioningDto
+    ) {
         OnboardingRequest request = getRequestById(id);
 
         switch (request.getStatus()) {
             case MANAGER_REVIEW -> {
                 if (role != Role.MANAGER) {
-                    throw new BadRequestException("Only managers can approve requests in MANAGER_REVIEW status.");
+                    throw new BadRequestException(
+                            messageService.get("onboarding.approve.manager-only")
+                    );
                 }
 
                 if (request.getHardwareTier() == HardwareTier.PREMIUM) {
@@ -152,16 +201,20 @@ public class OnboardingService {
             }
 
             case FINANCE_APPROVAL -> throw new BadRequestException(
-                "Finance approval requires budget details. Please use the finance approval endpoint."
+                messageService.get("onboarding.approve.finance-endpoint-required")
             );
 
             case IT_PROVISIONING -> {
                 if (role != Role.IT) {
-                    throw new BadRequestException("Only IT users can complete IT provisioning.");
+                    throw new BadRequestException(
+                        messageService.get("onboarding.approve.it-only")
+                    );
                 }
 
                 if (itProvisioningDto == null) {
-                    throw new BadRequestException("IT provisioning details are required.");
+                    throw new BadRequestException(
+                        messageService.get("onboarding.approve.it-details-required")
+                    );
                 }
 
                 request.setCompanyEmail(itProvisioningDto.getCompanyEmail());
@@ -170,7 +223,10 @@ public class OnboardingService {
             }
 
             default -> throw new BadRequestException(
-                "Request cannot be approved from status: " + request.getStatus()
+                messageService.get(
+                    "onboarding.approve.invalid-status",
+                    request.getStatus()
+                )
             );
         }
 
@@ -181,16 +237,15 @@ public class OnboardingService {
 
         if (role == Role.MANAGER) {
             action = HistoryAction.MANAGER_APPROVED;
-
             notes = request.getHardwareTier() == HardwareTier.PREMIUM
-                ? "Manager approved request. Premium hardware requires Finance approval."
-                : "Manager approved request. Standard hardware sent directly to IT Provisioning.";
+                ? messageService.get("history.manager-approved.premium")
+                : messageService.get("history.manager-approved.standard");
         } else if (role == Role.IT) {
             action = HistoryAction.IT_COMPLETED;
-            notes = "IT completed account setup and laptop provisioning.";
+            notes = messageService.get("history.it-completed");
         } else {
             action = HistoryAction.MANAGER_APPROVED;
-            notes = "Request approved.";
+            notes = messageService.get("history.request-approved");
         }
 
         saveHistory(
@@ -206,10 +261,21 @@ public class OnboardingService {
                     approvedRequest.getId(),
                     Role.FINANCE,
                     NotificationType.REQUEST_APPROVED,
-                    "Finance approval required",
-                    "Manager approved the request for "
-                        + approvedRequest.getEmployeeName()
-                        + ". Premium hardware budget approval is required."
+                    messageService.get("notification.finance-required.title"),
+                    messageService.get(
+                        "notification.finance-required.message",
+                        approvedRequest.getEmployeeName()
+                    )
+                );
+
+                sendEmailToRole(
+                    Role.FINANCE,
+                    messageService.get("email.finance-required.subject"),
+                    messageService.get("notification.finance-required.title"),
+                    messageService.get(
+                        "notification.finance-required.message",
+                        approvedRequest.getEmployeeName()
+                    )
                 );
             }
 
@@ -218,10 +284,21 @@ public class OnboardingService {
                     approvedRequest.getId(),
                     Role.IT,
                     NotificationType.REQUEST_APPROVED,
-                    "IT provisioning required",
-                    "Manager approved the request for "
-                        + approvedRequest.getEmployeeName()
-                        + ". IT provisioning can now start."
+                    messageService.get("notification.it-required.title"),
+                    messageService.get(
+                        "notification.it-required.message",
+                        approvedRequest.getEmployeeName()
+                    )
+                );
+
+                sendEmailToRole(
+                    Role.IT,
+                    messageService.get("email.it-required.subject"),
+                    messageService.get("notification.it-required.title"),
+                    messageService.get(
+                        "notification.it-required.message",
+                        approvedRequest.getEmployeeName()
+                    )
                 );
             }
         }
@@ -231,10 +308,21 @@ public class OnboardingService {
                 approvedRequest.getId(),
                 Role.HR,
                 NotificationType.IT_COMPLETED,
-                "Onboarding completed",
-                "IT completed provisioning for "
-                    + approvedRequest.getEmployeeName()
-                    + ". The onboarding request is now completed."
+                messageService.get("notification.it-completed.title"),
+                messageService.get(
+                    "notification.it-completed.message",
+                    approvedRequest.getEmployeeName()
+                )
+            );
+
+            sendEmailToRole(
+                Role.IT,
+                messageService.get("email.finance-approved.subject"),
+                messageService.get("notification.finance-approved.title"),
+                messageService.get(
+                    "notification.finance-approved.message",
+                    approvedRequest.getEmployeeName()
+                )
             );
         }
 
@@ -245,19 +333,19 @@ public class OnboardingService {
         OnboardingRequest request = getRequestById(id);
 
         if (request.getStatus() == OnboardingStatus.COMPLETED) {
-            throw new BadRequestException("Completed requests cannot be rejected.");
+            throw new BadRequestException(messageService.get("onboarding.reject.completed"));
         }
 
         if (request.getStatus() == OnboardingStatus.MANAGER_REVIEW && role != Role.MANAGER) {
-            throw new BadRequestException("Only managers can reject requests in MANAGER_REVIEW status.");
+            throw new BadRequestException(messageService.get("onboarding.reject.manager-only"));
         }
 
         if (request.getStatus() == OnboardingStatus.FINANCE_APPROVAL && role != Role.FINANCE) {
-            throw new BadRequestException("Only finance users can reject requests in FINANCE_APPROVAL status.");
+            throw new BadRequestException(messageService.get("onboarding.reject.finance-only"));
         }
 
         if (request.getStatus() == OnboardingStatus.IT_PROVISIONING && role != Role.IT) {
-            throw new BadRequestException("Only IT users can reject requests in IT_PROVISIONING status.");
+            throw new BadRequestException(messageService.get("onboarding.reject.it-only"));
         }
 
         request.setStatus(OnboardingStatus.NEEDS_REWORK);
@@ -269,40 +357,54 @@ public class OnboardingService {
             rejectedRequest.getId(),
             HistoryAction.REJECTED,
             role,
-            "Request rejected. Reason: " + dto.getRejectionReason()
+            messageService.get("history.rejected", dto.getRejectionReason())
         );
 
         notifyRole(
             rejectedRequest.getId(),
             Role.HR,
             NotificationType.REQUEST_REJECTED,
-            "Request rejected",
-            "The onboarding request for "
-                + rejectedRequest.getEmployeeName()
-                + " was rejected. Reason: "
-                + dto.getRejectionReason()
+            messageService.get("notification.request-rejected.title"),
+            messageService.get(
+                "notification.request-rejected.message",
+                rejectedRequest.getEmployeeName(),
+                dto.getRejectionReason()
+            )
+        );
+
+        sendEmailToRole(
+            Role.HR,
+            messageService.get("email.request-rejected.subject"),
+            messageService.get("notification.request-rejected.title"),
+            messageService.get(
+                "notification.request-rejected.message",
+                rejectedRequest.getEmployeeName(),
+                dto.getRejectionReason()
+            )
         );
 
         return rejectedRequest;
     }
 
     public OnboardingRequest financeApproveRequest(
-            Role role,
-            Long id,
-            FinanceApprovalDto dto
+        Role role,
+        Long id,
+        FinanceApprovalDto dto
     ) {
         if (role != Role.FINANCE) {
-            throw new BadRequestException("Only finance users can approve hardware budget.");
+            throw new BadRequestException(messageService.get("onboarding.finance.only-finance"));
         }
 
         OnboardingRequest request = getRequestById(id);
 
         if (request.getStatus() != OnboardingStatus.FINANCE_APPROVAL) {
-            throw new BadRequestException("Only requests with FINANCE_APPROVAL status can be approved by Finance.");
+            throw new BadRequestException(
+                messageService.get("onboarding.finance.only-finance-status")
+            );
         }
 
         if (request.getHardwareTier() != HardwareTier.PREMIUM) {
-            throw new BadRequestException("Finance approval is required only for PREMIUM hardware requests.");
+            throw new BadRequestException(messageService.get("onboarding.finance.only-premium"));
         }
 
         request.setApprovedBudget(dto.getApprovedBudget());
@@ -312,21 +414,35 @@ public class OnboardingService {
         OnboardingRequest approvedRequest = onboardingRequestRepository.save(request);
 
         saveHistory(
-            approvedRequest.getId(),
-            HistoryAction.FINANCE_APPROVED,
-            role,
-            "Finance approved hardware budget: " + dto.getApprovedBudget()
-                + ". Notes: " + dto.getFinanceNotes()
+                approvedRequest.getId(),
+                HistoryAction.FINANCE_APPROVED,
+                role,
+                messageService.get(
+                    "history.finance-approved",
+                    dto.getApprovedBudget(),
+                    dto.getFinanceNotes()
+                )
         );
 
         notifyRole(
             approvedRequest.getId(),
             Role.IT,
             NotificationType.FINANCE_APPROVED,
-            "IT provisioning required",
-            "Finance approved the hardware budget for "
-                + approvedRequest.getEmployeeName()
-                + ". IT provisioning can now start."
+            messageService.get("notification.finance-approved.title"),
+            messageService.get(
+                "notification.finance-approved.message",
+                approvedRequest.getEmployeeName()
+            )
+        );
+
+        sendEmailToRole(
+            Role.IT,
+            messageService.get("email.finance-approved.subject"),
+            messageService.get("notification.finance-approved.title"),
+            messageService.get(
+                "notification.finance-approved.message",
+                approvedRequest.getEmployeeName()
+            )
         );
 
         return approvedRequest;
@@ -338,36 +454,19 @@ public class OnboardingService {
         return onboardingHistoryRepository.findByRequestIdOrderByCreatedAtDesc(requestId);
     }
 
-    private void saveHistory(
-            Long requestId,
-            HistoryAction action,
-            Role role,
-            String notes
-    ) {
-        OnboardingHistory history = OnboardingHistory.builder()
-            .requestId(requestId)
-            .action(action)
-            .performedByRole(role)
-            .notes(notes)
-            .build();
+    @Transactional
+    public void deleteRequest(Role role, Long id) {
+        if (role != Role.ADMIN) {
+            throw new BadRequestException(messageService.get("onboarding.delete.only-admin"));
+        }
 
-        onboardingHistoryRepository.save(history);
-    }
+        OnboardingRequest request = getRequestById(id);
 
-    private void notifyRole(
-            Long requestId,
-            Role targetRole,
-            NotificationType type,
-            String title,
-            String message
-    ) {
-        notificationService.createNotification(
-            requestId,
-            targetRole,
-            type,
-            title,
-            message
-        );
+        onboardingHistoryRepository.deleteByRequestId(id);
+        onboardingCommentRepository.deleteByRequestId(id);
+        notificationRepository.deleteByRequestId(id);
+
+        onboardingRequestRepository.delete(request);
     }
 
     public DashboardStatsDto getDashboardStats() {
@@ -381,5 +480,62 @@ public class OnboardingService {
             onboardingRequestRepository.countByHardwareTier(HardwareTier.STANDARD),
             onboardingRequestRepository.countByHardwareTier(HardwareTier.PREMIUM)
         );
+    }
+
+    private void saveHistory(
+        Long requestId,
+        HistoryAction action,
+        Role role,
+        String notes
+    ) {
+        OnboardingHistory history = OnboardingHistory.builder()
+            .requestId(requestId)
+            .action(action)
+            .performedByRole(role)
+            .notes(notes)
+            .build();
+
+        onboardingHistoryRepository.save(history);
+    }
+
+    private void notifyRole(
+        Long requestId,
+        Role targetRole,
+        NotificationType type,
+        String title,
+        String message
+    ) {
+        notificationService.createNotification(
+            requestId,
+            targetRole,
+            type,
+            title,
+            message
+        );
+    }
+
+    private void sendEmailToRole(
+        Role role,
+        String subject,
+        String title,
+        String message
+    ) {
+        List<User> users = userRepository.findAllByRole(role);
+
+        for (User user : users) {
+            try {
+                emailService.sendWorkflowEmail(
+                    user.getEmail(),
+                    subject,
+                    title,
+                    message
+                );
+            } catch (Exception exception) {
+                System.err.println(
+                        messageService.get("email.workflow.send.failed", user.getEmail())
+                );
+                exception.printStackTrace();
+            }
+        }
     }
 }

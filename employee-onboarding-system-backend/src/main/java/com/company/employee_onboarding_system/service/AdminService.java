@@ -16,6 +16,7 @@ import java.util.List;
 public class AdminService {
 
     private final UserRepository userRepository;
+    private final MessageService messageService;
 
     public List<User> getAllUsers(Role currentUserRole) {
         validateAdmin(currentUserRole);
@@ -32,7 +33,7 @@ public class AdminService {
         User user = userRepository.findById(userId)
             .orElseThrow(() ->
                 new ResourceNotFoundException(
-                    "User not found with id: " + userId
+                    messageService.get("admin.user.not-found", userId)
                 ));
 
         long adminCount = userRepository.countByRole(Role.ADMIN);
@@ -42,7 +43,7 @@ public class AdminService {
             && adminCount == 1) {
 
             throw new BadRequestException(
-                    "At least one ADMIN account must remain in the system."
+                messageService.get("admin.last-admin-required")
             );
         }
 
@@ -53,7 +54,7 @@ public class AdminService {
 
     private void validateAdmin(Role role) {
         if (role != Role.ADMIN) {
-            throw new BadRequestException("Only admins can perform this action.");
+            throw new BadRequestException(messageService.get("admin.only-admin"));
         }
     }
 }

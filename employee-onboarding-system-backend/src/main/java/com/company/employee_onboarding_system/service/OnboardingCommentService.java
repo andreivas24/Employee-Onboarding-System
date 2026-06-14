@@ -19,6 +19,7 @@ public class OnboardingCommentService {
     private final OnboardingCommentRepository onboardingCommentRepository;
     private final UserRepository userRepository;
     private final OnboardingService onboardingService;
+    private final MessageService messageService;
 
     public List<OnboardingComment> getComments(Long requestId) {
         onboardingService.getRequestById(requestId);
@@ -36,10 +37,9 @@ public class OnboardingCommentService {
 
         User user = userRepository.findByEmail(authorEmail)
             .orElseThrow(() ->
-                    new ResourceNotFoundException(
-                        "User not found with email: " + authorEmail
-                    )
-            );
+                new ResourceNotFoundException(
+                    messageService.get("comment.user.not-found", authorEmail)
+                ));
 
         OnboardingComment comment = OnboardingComment.builder()
             .requestId(requestId)
